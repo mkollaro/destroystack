@@ -2,7 +2,7 @@
 
 General assumptions:
 * there should be a time limit (~1 minute) for waiting until replica
-  regeneration, otherwise the test fails
+  regeneration (3 replicas of everything), otherwise the test fails
 * replica count is 3 unless stated otherwise
 * Swift populated with some random objects and containers
 
@@ -67,7 +67,7 @@ Tests:
       still available)
     - wait until the replica count of data not lost is 3 again, check whether a
       user accessing the lost data gets a meaningful error message
-    - access data that did not get lost
+    - as user, access data that did not get lost
 
 * shutdown one data server, wait, start it again
     - force shutdown data server #1
@@ -108,7 +108,6 @@ Tests:
     - object should be put on an offhand node (?)
 
 
-
 ## Medium Setup
 
 
@@ -116,12 +115,10 @@ Tests:
     | Proxy Server #1 +-----+
     |                 |     |
     +-----------------+     |
-                            |
     +-----------------+     |
     | Proxy Server #2 +-----+
     |                 |     |
     +-----------------+     |
-                            |
                             |
       +----------+----------+
       |          |          |
@@ -130,7 +127,6 @@ Tests:
     | Server | | Server | | Server |
     | #1     | | #2     | | #3     |
     |        | |        | |        |
-    |        | |        | |        |
     +--------+ +--------+ +--------+
 
 Assumptions:
@@ -138,7 +134,6 @@ Assumptions:
 
 Notes:
 * a separate server for keystone?
-
 
 Tests:
 * shutdown one proxy server, wait, start it again
@@ -151,32 +146,25 @@ Tests:
 * TODO
 
 
-
 ## Large Setup
 
      +----------+                                        +----------+
-     |          |                                        |          |
      | Users    |                                        |    Users |
      +---+------+                                        +-------+--+
          |                                                       |
          |                                                       |
     +----+---------------------+          +----------------------+----+
     |        REGION #1         |          |         REGION #2         |
-    |                          |          |                           |
     |         +------------+   |          |  +-----------+            |
     |         |  Proxy #1  |   +----------+  | Proxy #2  |            |
     |         |            |   |          |  |           |            |
     |         +---------+--+   |          |  +--+--------+            |
     |                   |      |          |     |                     |
     | +------------+    |      |          |     |      +------------+ |
-    | |            |    |      |          |     |      |            | |
     | |Data Server +----+      |          |     +------+Data Server | |
-    | |            |    |      |          |            |            | |
     | +------------+    |      |          |            +------------+ |
     | +------------+    |      |          |                           |
-    | |            |    |      |          |                           |
     | |Data Server +----+      |          |                           |
-    | |            |           |          |                           |
     | +------------+           |          |                           |
     +--------------------------+          +---------------------------+
 
@@ -185,7 +173,6 @@ Assumptions:
 * there is a single connection between the regions (imagine a single cable
   between buildings with the data centers)
 * some imaginary users live near region #1 and the others near region #2
-
 
 Notes:
 * is this a realistic scenario?
@@ -197,7 +184,6 @@ Notes:
 * what about replication in this scenario? How long does a region wait until
   deciding it should start replication? what happens after this time period?
   doesn't it cause a mass replication that would make Swift unresponsive?
-
 
 Tests:
 * network partition between regions
