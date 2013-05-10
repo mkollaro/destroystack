@@ -18,9 +18,9 @@ virtual machines, there is no need for bare metal, and should be running RHEL
 packages. Your SSH keys have to be distributed on them. For more info on the
 setups, see the file `TEST_PLAN.md`
 
-You will also need [packstack](https://github.com/stackforge/packstack) and
-`python-nose` on the machine from which you run the tests (do not run them
-on the test machines).
+You may need [packstack](https://github.com/stackforge/packstack) (but you can
+use some other installation tool) and `python-nose` on the machine from which
+you run the tests (do not run them on the test machines).
 
 Future requirements will be around 6 testing servers.
 
@@ -34,19 +34,27 @@ file. Change the disk names in case they are called differently than
 `/dev/{vdb,vdc,vdd}`. Don't put your main disk in here! They will all be
 formatted. You can use a single server for the basic tests, but you will need at
 least 6 disks on it. Just add or remove server entries depending on how many you
-have. The services password is what will be set by packstack for keystone and
-other things, you don't need to change it. The timeout is in seconds and tells
-the tests how long to wait for things like replica regeneration before failing
-the tests.
+have. The services password is what will be set in the answer files for keystone
+and other things, you don't need to change it. The timeout is in seconds and
+tells the tests how long to wait for stuff like replica regeneration before
+failing the tests.
 
     $ python destroystack/tools/generate_answerfiles.py
 
-Now install Swift using packstack:
+If you want to use something different for Swift installation, look into the
+answer files in `etc/` and make sure you will use the exact same topology as
+written on top of the file. Even using more servers than DestroyStack chose to
+use may cause false positives.
+
+If you chose to use packstack, install Swift like this:
 
     $ packstack --answer-file=etc/packstack.tinysetup.answfile
 
-TODO: there will be multiple setups and packstack will be probably run in the
-module or package setup method, not manually
+TODO: There will be multiple setups and packstack (or other tool, set in a
+configuration file) will be probably run in the module or package setup
+function, not manually. There should still remain the possibility to do it
+manually - install Swift any way you wish, run a subset of tests that uses that
+setup, reinstall Swift, run another subset of tests...
 
 Run the tests:
 

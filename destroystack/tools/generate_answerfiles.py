@@ -23,15 +23,26 @@ from socket import gethostbyname
 import destroystack.tools.common as common
 import destroystack.tools.config as config
 
-def _get_storage_nodes(dataserver_configs):
-    """ Return a list in form "some.ip.address/vda,some.other.ip.address/vdb"
+def _get_storage_nodes_description(dataserver_configs):
+    """ Return a list in form ["ip.address/vda", "ip.address.2/vda"]
     """
     storage = list()
     for server in dataserver_configs:
         for disk in server['extra_disks']:
             ip = gethostbyname(server["hostname"])
             storage.append(ip + "/" + disk)
-    return ",".join(storage)
+    return storage
+
+def _get_topology_description(proxy_configs, dataserver_configs):
+    desc  = "# Swift topology:\n"
+    desc += "# \tproxy servers:\n"
+    for proxy in proxy_configs:
+        desc += "# \t\t%s\n" % proxy["hostname"]
+    desc += "# \tstorage nodes:\n"
+    nodes = _get_storage_nodes_description(dataserver_configs)
+    for node in nodes:
+        desc += "# \t\t%s\n" % node
+    return desc + "\n"
 
 def main():
     """ Generate answer files for packstack
@@ -40,14 +51,15 @@ def main():
     conf = config.Config()
     proxy_conf, data_conf = config.get_tiny_setup_conf(conf)
     main_ip = gethostbyname(proxy_conf[0]["hostname"])
-    nodes = _get_storage_nodes(data_conf)
+    nodes = _get_storage_nodes_description(data_conf)
     with open(path, 'w') as out:
+        out.write(_get_topology_description(proxy_conf, data_conf))
         for line in open(path + ".sample"):
             line = line.replace("MAINSERVER", main_ip)
             line = line.replace("MYPASS", conf.services_password)
             line = line.replace("HOMEPATH", expanduser("~"))
             if "CONFIG_SWIFT_STORAGE_HOSTS" in line:
-                line = "CONFIG_SWIFT_STORAGE_HOSTS = " + nodes
+                line = "CONFIG_SWIFT_STORAGE_HOSTS = " + ",".join(nodes)
             out.write(line)
 
 if __name__ == '__main__':
