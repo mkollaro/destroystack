@@ -1,0 +1,17 @@
+{
+    "timeout": 60,
+    "services_password":"123456",
+    "servers": [
+        {
+        "hostname": "SERVER1.COM"
+        },
+        {
+        "hostname": "SERVER2.COM",
+        "extra_disks": ["vdb", "vdc", "vdd"]
+        },
+        {
+        "hostname": "SERVER3.COM",
+        "extra_disks": ["vdb", "vdc", "vdd"]
+        }
+    ]
+}

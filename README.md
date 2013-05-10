@@ -8,31 +8,36 @@ fail injection tests on other OpenStack projects.
 
 ## Requirements
 
-Should be run using at least 3 testing servers, but can be tried out on a single
-server too. The servers should have 6 extra empty disks (a good setup should be
-1 server without extra disks, 2nd server with 3 extra disk, 3rd server with
-another 3 disks) with a file system and no partitions. Their size is not
-important - 1GB per disk is enough. The servers can be VMs, there is no need for
-bare metal, and should be running RHEL (Fedora not tested yet) and have a yum
-repository that contains openstack packages. Your SSH keys have to be
-distributed on them. For more info on the setups, see the file 'TEST_PLAN.md'
+Should be run using 3 testing servers, but can be tried out on a single server
+too. The servers should have 6 extra empty disks in total - a good setup should
+be 1 server without extra disks, 2nd server with 3 extra disk, 3rd server with
+another 3 disks. The extra disks should have a file system and no partitions.
+Their size is not important - 1 GB per disk is enough. The servers can be
+virtual machines, there is no need for bare metal, and should be running RHEL
+(Fedora not tested yet) and have a yum repository that contains OpenStack
+packages. Your SSH keys have to be distributed on them. For more info on the
+setups, see the file `TEST_PLAN.md`
 
-You will also need openstack-packstack on the machine from witch you run the
-tests (do not run them on the test machines).
+You will also need [packstack](https://github.com/stackforge/packstack) and
+`python-nose` on the machine from which you run the tests (do not run them
+on the test machines).
 
-Future requirements will be around 6 servers.
+Future requirements will be around 6 testing servers.
 
 ## Usage
 
     $ cd destroystack
     $ cp etc/config.json.sample etc/config.json
 
-Replace SERVERx.COM with the hostnames of your servers in the config.json file.
-Change the disk names in case they are called differently than
-/dev/{vdb,vdc,vdd} or if you have a different number of them. Don't put your
-main disk in here! They will all be formatted. You can use a single server for
-the basic tests, but you will need at least 6 disks on it. Just add or remove
-server entries depending on how many you have.
+Replace `SERVERx.COM` with the host names of your servers in the `config.json`
+file. Change the disk names in case they are called differently than
+`/dev/{vdb,vdc,vdd}`. Don't put your main disk in here! They will all be
+formatted. You can use a single server for the basic tests, but you will need at
+least 6 disks on it. Just add or remove server entries depending on how many you
+have. The services password is what will be set by packstack for keystone and
+other things, you don't need to change it. The timeout is in seconds and tells
+the tests how long to wait for things like replica regeneration before failing
+the tests.
 
     $ python destroystack/tools/generate_answerfiles.py
 
@@ -61,9 +66,10 @@ belongs to [tempest](https://github.com/openstack/tempest) or into the tests
 that are part of Swift's source code.
 
 The Swift deployment gets reset after each test case - right now it is done by
-making a backup of the *.ring.gz and *.builder files (among others) in the
+making a backup of the `*.ring.gz` and `*.builder` files (among others) in the
 beginning and then restoring them after each test case and restarting the
 services. This could also be done with packstack, but it is slow (which could
-perhaps be fixed). Another option is to use snapshots of the test machines.
+perhaps be fixed). Another option would be to to use snapshots of the test
+machines.
 
-For more information, read the TEST_PLAN.md file.
+For more information, read the `TEST_PLAN.md` file.
