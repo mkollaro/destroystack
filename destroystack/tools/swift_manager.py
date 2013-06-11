@@ -160,15 +160,15 @@ class SwiftManager(swiftclient.client.Connection):
                     mkdir -p /var/tmp/swift-backup/etc &&
                     cd /etc/swift &&
                     cp -r *.builder *.ring.gz /var/tmp/swift-backup/etc/""")
-
             for server in self.data_servers:
-                cmd = """
-                    rm -fr /var/tmp/swift-backup/{devices,cache};
-                    mkdir -p /var/tmp/swift-backup/{devices,cache} &&
-                    cp /var/cache/swift/*.recon /var/tmp/swift-backup/cache/ """
+                server.ssh.run("rm -fr /var/tmp/swift-backup/{devices,cache}")
+                server.ssh.run("mkdir -p /var/tmp/swift-backup/{devices,cache}")
+                server.ssh.run(
+                    "cp /var/cache/swift/*.recon /var/tmp/swift-backup/cache/",
+                    ignore_failure=True)
                 for device in server.get_mount_points().values():
-                    cmd += "&& cp -r %s /var/tmp/swift-backup/devices/" % device
-                server.ssh.run(cmd)
+                    server.ssh.run("cp -r %s /var/tmp/swift-backup/devices/"
+                                    % device)
         finally:
             self._start_services()
 
@@ -179,18 +179,20 @@ class SwiftManager(swiftclient.client.Connection):
         was when making the backup. While doing this, Swift services are stopped
         and then started again.
         """
-        self._stop_services()
-        for server in self.proxy_servers:
-            server.ssh.run("cp -r /var/tmp/swift-backup/etc/* /etc/swift/ ")
-        for server in self.data_servers:
-            cmd = []
-            for device in server.get_mount_points().values():
-                cmd.append("cp -r /var/tmp/swift-backup/devices/* /srv/node/")
-                server.ssh.run(" && ".join(cmd))
-            server.ssh.run("chown -R swift:swift /srv/node/*")
-            server.ssh.run(
-                "cp -r /var/tmp/swift-backup/cache/* /var/cache/swift/")
-        self._start_services()
+        try:
+            self._stop_services()
+            for server in self.proxy_servers:
+                server.ssh.run("cp -r /var/tmp/swift-backup/etc/* /etc/swift/ ")
+            for server in self.data_servers:
+                for device in server.get_mount_points().values():
+                    server.ssh.run(
+                        "cp -r /var/tmp/swift-backup/devices/* /srv/node/")
+                server.ssh.run("chown -R swift:swift /srv/node/*")
+                server.ssh.run(
+                    "cp -r /var/tmp/swift-backup/cache/* /var/cache/swift/",
+                    ignore_failure=True)
+        finally:
+            self._start_services()
 
     def _stop_services(self):
         for server in self.proxy_servers + self.data_servers:
