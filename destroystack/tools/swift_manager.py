@@ -172,15 +172,15 @@ class SwiftManager(swiftclient.client.Connection):
                     rm -fr /var/tmp/swift-backup/etc &&
                     mkdir -p /var/tmp/swift-backup/etc &&
                     cd /etc/swift &&
-                    cp -r *.builder *.ring.gz /var/tmp/swift-backup/etc/""")
+                    cp -rp *.builder *.ring.gz /var/tmp/swift-backup/etc/""")
             for server in self.data_servers:
                 server.ssh("rm -fr /var/tmp/swift-backup/{devices,cache}")
                 server.ssh("mkdir -p /var/tmp/swift-backup/{devices,cache}")
                 server.ssh(
-                    "cp /var/cache/swift/* /var/tmp/swift-backup/cache/",
+                    "cp -p /var/cache/swift/* /var/tmp/swift-backup/cache/",
                     ignore_failure=True)
                 for device in server.get_mount_points().values():
-                    server.ssh("cp -r %s /var/tmp/swift-backup/devices/"
+                    server.ssh("cp -rp %s /var/tmp/swift-backup/devices/"
                                     % device)
         finally:
             self._start_services()
@@ -195,15 +195,15 @@ class SwiftManager(swiftclient.client.Connection):
         try:
             self._stop_services()
             for server in self.proxy_servers:
-                server.ssh("cp -r /var/tmp/swift-backup/etc/* /etc/swift/ ")
+                server.ssh("cp -rp /var/tmp/swift-backup/etc/* /etc/swift/ ")
             for server in self.data_servers:
                 for device in server.get_mount_points().values():
                     server.ssh(
-                        "cp -r /var/tmp/swift-backup/devices/* /srv/node/")
+                        "cp -rp /var/tmp/swift-backup/devices/* /srv/node/")
                 server.ssh("chown -R swift:swift /srv/node/*")
                 server.ssh("restorecon -R /srv/*")
                 server.ssh(
-                    "cp -r /var/tmp/swift-backup/cache/* /var/cache/swift/",
+                    "cp -rp /var/tmp/swift-backup/cache/* /var/cache/swift/",
                     ignore_failure=True)
         finally:
             self._start_services()
