@@ -129,17 +129,17 @@ class SwiftManager(swiftclient.client.Connection):
         try:
             self._stop_services()
             for server in self.proxy_servers:
-                server.ssh.run("""
+                server.ssh("""
                     service rsyslog restart && service memcached restart &&
                     cd /etc/swift &&
                     rm -fr *.builder *.ring.gz backups """)
             for server in self.data_servers:
-                server.ssh.run("rm -f /var/cache/swift/*.recon")
+                server.ssh("rm -f /var/cache/swift/*.recon")
                 for disk in server.disks:
                     server.safe_umount_disk(disk)
-                server.ssh.run("rm -fr /srv/node/device*/*")
+                server.ssh("rm -fr /srv/node/device*/*")
                 for disk in server.disks:
-                    server.ssh.run("mkfs.ext4 /dev/%s && mount /dev/%s"
+                    server.ssh("mkfs.ext4 /dev/%s && mount /dev/%s"
                                     % (disk, disk))
         finally:
             self._restore()
@@ -151,7 +151,7 @@ class SwiftManager(swiftclient.client.Connection):
         system disk if the disk is umounted.
         """
         for server in self.data_servers:
-            server.ssh.run("""
+            server.ssh("""
                 sed -i -e 's/mount_check.*=.*false/mount_check = true/' \
                 /etc/swift/*-server.conf""")
         if restart_services:
@@ -168,19 +168,19 @@ class SwiftManager(swiftclient.client.Connection):
         try:
             self._stop_services()
             for server in self.proxy_servers:
-                server.ssh.run("""
+                server.ssh("""
                     rm -fr /var/tmp/swift-backup/etc &&
                     mkdir -p /var/tmp/swift-backup/etc &&
                     cd /etc/swift &&
                     cp -r *.builder *.ring.gz /var/tmp/swift-backup/etc/""")
             for server in self.data_servers:
-                server.ssh.run("rm -fr /var/tmp/swift-backup/{devices,cache}")
-                server.ssh.run("mkdir -p /var/tmp/swift-backup/{devices,cache}")
-                server.ssh.run(
-                    "cp /var/cache/swift/*.recon /var/tmp/swift-backup/cache/",
+                server.ssh("rm -fr /var/tmp/swift-backup/{devices,cache}")
+                server.ssh("mkdir -p /var/tmp/swift-backup/{devices,cache}")
+                server.ssh(
+                    "cp /var/cache/swift/* /var/tmp/swift-backup/cache/",
                     ignore_failure=True)
                 for device in server.get_mount_points().values():
-                    server.ssh.run("cp -r %s /var/tmp/swift-backup/devices/"
+                    server.ssh("cp -r %s /var/tmp/swift-backup/devices/"
                                     % device)
         finally:
             self._start_services()
@@ -195,14 +195,14 @@ class SwiftManager(swiftclient.client.Connection):
         try:
             self._stop_services()
             for server in self.proxy_servers:
-                server.ssh.run("cp -r /var/tmp/swift-backup/etc/* /etc/swift/ ")
+                server.ssh("cp -r /var/tmp/swift-backup/etc/* /etc/swift/ ")
             for server in self.data_servers:
                 for device in server.get_mount_points().values():
-                    server.ssh.run(
+                    server.ssh(
                         "cp -r /var/tmp/swift-backup/devices/* /srv/node/")
-                server.ssh.run("chown -R swift:swift /srv/node/*")
-                server.ssh.run("restorecon -R /srv/*")
-                server.ssh.run(
+                server.ssh("chown -R swift:swift /srv/node/*")
+                server.ssh("restorecon -R /srv/*")
+                server.ssh(
                     "cp -r /var/tmp/swift-backup/cache/* /var/cache/swift/",
                     ignore_failure=True)
         finally:
@@ -211,7 +211,7 @@ class SwiftManager(swiftclient.client.Connection):
     def _stop_services(self):
         for server in self.proxy_servers + self.data_servers:
             try:
-                server.ssh.run("swift-init all stop", log_error=False)
+                server.ssh("swift-init all stop", log_error=False)
             except servers.ServerException:
                 # 'swift-init all stop' returns non-zero if the services are
                 # already stopped, so check if this is the case
@@ -222,18 +222,18 @@ class SwiftManager(swiftclient.client.Connection):
 
     def _start_services(self):
         for server in self.data_servers:
-            server.ssh.run("swift-init account container object rest start")
+            server.ssh("swift-init account container object rest start")
         for server in self.proxy_servers:
-            server.ssh.run("swift-init proxy start")
+            server.ssh("swift-init proxy start")
 
     def _restart_services(self):
         for server in self.data_servers:
-            server.ssh.run("swift-init account container object rest restart")
+            server.ssh("swift-init account container object rest restart")
         for server in self.proxy_servers:
-            server.ssh.run("swift-init proxy restart")
+            server.ssh("swift-init proxy restart")
 
     def _get_running_services(self, server):
-        _, stdout, _ = server.ssh.run("swift-init all status",
+        _, stdout, _ = server.ssh("swift-init all status",
                         ignore_failure=True)
         return [line.split()[0] for line in stdout.readlines()
                 if not line.startswith("No ")]
@@ -271,7 +271,7 @@ class SwiftManager(swiftclient.client.Connection):
             object_name = ''
         cmd = "swift-get-nodes -a /etc/swift/%s.ring.gz %s %s %s |grep curl" \
                 % (ring, account_hash, container_name, object_name)
-        _, stdout, _ = self.proxy_servers[0].ssh.run(cmd)
+        _, stdout, _ = self.proxy_servers[0].ssh(cmd)
         urls = [line.split('#')[0].split()[-1].strip('"\n ')
                     for line in stdout.readlines()]
         return urls

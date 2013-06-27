@@ -69,7 +69,7 @@ class Server(object):
             disk = available_disks[0]
         assert disk in available_disks
         LOG.info("Killing disk /dev/%s on %s", disk, self.name)
-        self.ssh.run("umount --force -l /dev/" + disk)
+        self.ssh("umount --force -l /dev/" + disk)
         return disk
 
     def safe_umount_disk(self, disk):
@@ -78,13 +78,13 @@ class Server(object):
         TODO: wait a bit if the device is busy
         """
         if disk in self.get_mount_points().keys():
-            self.ssh.run("umount /dev/%s"% disk)
+            self.ssh("umount /dev/%s"% disk)
 
     def format_disk(self, disk):
         LOG.info("Formatting disk /dev/%s on %s", disk, self.name)
         assert disk not in self.get_mounted_disks()
         assert disk in self.disks
-        self.ssh.run("mkfs.ext4 /dev/" + disk)
+        self.ssh("mkfs.ext4 /dev/" + disk)
 
     def restore_disk(self, disk):
         """ Mount disk, restore permissions and SELinux contexts.
@@ -94,9 +94,9 @@ class Server(object):
         """
         assert disk not in self.get_mounted_disks()
         LOG.info("Restoring disk /dev/%s on %s", disk, self.name)
-        self.ssh.run("mount /dev/" + disk)
-        self.ssh.run("chown -R swift:swift /srv/node/*")
-        self.ssh.run("restorecon -R /srv/*")
+        self.ssh("mount /dev/" + disk)
+        self.ssh("chown -R swift:swift /srv/node/*")
+        self.ssh("restorecon -R /srv/*")
 
     def get_mount_points(self):
         """ Get dict {disk:mountpoint} of mounted and managed disks.
@@ -107,7 +107,7 @@ class Server(object):
         """
         mount_points = dict()
         for disk in self.disks:
-            _, stdout, _ = self.ssh.run(
+            _, stdout, _ = self.ssh(
                 "mount|grep /dev/%s| awk '{print $3}'" % disk)
             output = stdout.readlines()
             if output:
@@ -127,7 +127,7 @@ class SSH(paramiko.SSHClient):
         super(SSH, self).__init__()
         self.hostname = hostname
 
-    def run(self, command, ignore_failure=False, log_error=True):
+    def __call__(self, command, ignore_failure=False, log_error=True):
         """ Same as exec_command, but checks for errors.
 
         If an error occurs, it logs the command, stdout and stderr.
