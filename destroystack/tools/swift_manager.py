@@ -188,6 +188,7 @@ class SwiftManager(swiftclient.client.Connection):
                     server.ssh.run(
                         "cp -r /var/tmp/swift-backup/devices/* /srv/node/")
                 server.ssh.run("chown -R swift:swift /srv/node/*")
+                server.ssh.run("restorecon -R /srv/*")
                 server.ssh.run(
                     "cp -r /var/tmp/swift-backup/cache/* /var/cache/swift/",
                     ignore_failure=True)
