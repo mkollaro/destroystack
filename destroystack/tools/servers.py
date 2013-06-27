@@ -78,6 +78,15 @@ class Server(object):
         if disk in self.get_mount_points().keys():
             self.ssh.run("umount /dev/%s"% disk)
 
+    def restore_disk(self, disk):
+        """ Mount disk.
+
+        If some other method of killing disks is later used, this will change
+        to use something else than mount.
+        """
+        assert disk not in self.get_mounted_disks()
+        self.ssh.run("mount /dev/" + disk)
+
     def get_mount_points(self):
         """ Get dict {disk:mountpoint} of mounted and managed disks.
 
