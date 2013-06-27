@@ -85,13 +85,15 @@ class Server(object):
         self.ssh.run("mkfs.ext4 /dev/" + disk)
 
     def restore_disk(self, disk):
-        """ Mount disk.
+        """ Mount disk, restore permissions and SELinux contexts.
 
         If some other method of killing disks is later used, this will change
         to use something else than mount.
         """
         assert disk not in self.get_mounted_disks()
         self.ssh.run("mount /dev/" + disk)
+        self.ssh.run("chown -R swift:swift /srv/node/*")
+        self.ssh.run("restorecon -R /srv/*")
 
     def get_mount_points(self):
         """ Get dict {disk:mountpoint} of mounted and managed disks.
