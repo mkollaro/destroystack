@@ -45,6 +45,7 @@ class Server(object):
     def __init__(self, hostname,
             extra_disks=None, root_password=None, **kwargs):
         self.hostname = hostname
+        self.name = hostname.split('.')[0]
         self.disks = extra_disks
 
         self.ssh = SSH(hostname)
@@ -67,6 +68,7 @@ class Server(object):
         if disk is None:
             disk = available_disks[0]
         assert disk in available_disks
+        LOG.info("Killing disk /dev/%s on %s", disk, self.name)
         self.ssh.run("umount --force -l /dev/" + disk)
         return disk
 
@@ -79,7 +81,7 @@ class Server(object):
             self.ssh.run("umount /dev/%s"% disk)
 
     def format_disk(self, disk):
-        LOG.info("Formatting disk /dev/%s on %s", disk, self.hostname)
+        LOG.info("Formatting disk /dev/%s on %s", disk, self.name)
         assert disk not in self.get_mounted_disks()
         assert disk in self.disks
         self.ssh.run("mkfs.ext4 /dev/" + disk)
@@ -91,6 +93,7 @@ class Server(object):
         to use something else than mount.
         """
         assert disk not in self.get_mounted_disks()
+        LOG.info("Restoring disk /dev/%s on %s", disk, self.name)
         self.ssh.run("mount /dev/" + disk)
         self.ssh.run("chown -R swift:swift /srv/node/*")
         self.ssh.run("restorecon -R /srv/*")
