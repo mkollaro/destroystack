@@ -65,7 +65,7 @@ class SwiftManager(swiftclient.client.Connection):
         self._set_mount_check()
         self._backup()
 
-    def replicas_are_ok(self, replica_count=3):
+    def replicas_are_ok(self, count=3, check_nodes=None, exact=False):
         """ Check if all objects and containers have enough replicas.
 
         If no replicas of the object or container are left (so they got removed
@@ -75,7 +75,12 @@ class SwiftManager(swiftclient.client.Connection):
 
         TODO: check account replicas too
 
-        :returns: True iff there are 'replica_count' replicas of everything
+        :param check_nodes: Look only at first x number of nodes. Since usually
+            the first 'count' nodes are primary nodes, if you set
+            'check_nodes=count', no handoff nodes will be checked out. If
+            set to None, try all of them.
+        :param exact: also fail if there are more than 'count' replicas
+        :returns: True iff there are 'count' replicas of everything
         """
         account = self._get_account_hash()
         containers = [c['name'] for c in self.get_account()[1]]
@@ -85,25 +90,33 @@ class SwiftManager(swiftclient.client.Connection):
             objects = [o['name'] for o in self.get_container(container)[1]]
             for obj in objects:
                 urls = self._get_replicas_direct_urls(account, container, obj)
-                if not file_urls_ok(urls, "object " + obj, replica_count):
+                if not file_urls_ok(urls, "object " + obj, count, check_nodes,
+                                    exact):
                     return False
 
         # check containers
         for container in containers:
             urls = self._get_replicas_direct_urls(account, container)
-            if not file_urls_ok(urls, "container " + container, replica_count):
+            if not file_urls_ok(urls, "container " + container, count,
+                                check_nodes, exact):
                 return False
 
         LOG.info("all replicas found")
         return True
 
     @timeout(CONFIG.timeout, "The replicas were not consistent within timeout.")
-    def wait_for_replica_regeneration(self, replica_count=3):
-        """ Wait until there are 'replica_count' replicas of everything.
+    def wait_for_replica_regeneration(self, count=3, check_nodes=None,
+                                      exact=False):
+        """ Wait until there are 'count' replicas of everything.
 
+        :param check_nodes: Look only at first x number of nodes. Since usually
+            the first 'count' nodes are primary nodes, if you set
+            'check_nodes=count', no handoff nodes will be checked out. If
+            set to None, try all of them.
+        :param exact: also fail if there are more than 'count' replicas
         :raises TimeoutException: after time in seconds set in the config file
         """
-        while not self.replicas_are_ok(replica_count):
+        while not self.replicas_are_ok(count, check_nodes, exact):
             sleep(5)
 
     def reset(self):
@@ -240,11 +253,11 @@ class SwiftManager(swiftclient.client.Connection):
         directly accessed. The object (or anything else) doesn't actually need
         to exist, it will give you a URL where it would exist if you created it.
 
-        The first 'replica_count' items returned are primarily locations where
-        the data will be unless there was a failure, the rest will be handoff
-        nodes where the data will be only if there was a failure in the
-        primarily locations (the number of them depends on the number of nodes
-        there are).
+        The first 'replica_count' (normally set to 3) items returned are
+        primarily locations where the data will be unless there was a failure,
+        the rest will be handoff nodes where the data will be only if there was
+        a failure in the primarily locations (the number of them depends on the
+        number of nodes there are).
         """
         ring = ''
         if object_name is not None and container_name is not None:
@@ -264,25 +277,30 @@ class SwiftManager(swiftclient.client.Connection):
         return urls
 
 
-def file_urls_ok(urls, name, count=3, exact_count=False):
-    """ Go trough all URLs of the file and check if at least 'count' responded.
+def file_urls_ok(urls, name, count=3, check_url_count=None, exact=False):
+    """ Go trough URLs of the file and check if at least 'count' responded.
 
-    :param name: for logging output, should be something like "object 'file123'"
-    :param exact_count: also return False if more than 'count' were OK
+    :param name: for logging output, should be something like "object file123"
+    :param count: how many URLs need to be valid
+    :param check_url_count: try only first x number of the URLs. If set to
+        None, try all.
+    :param exact: also fail if there are more than 'count' replicas
     """
     found = 0
-    for url in urls:
+    for url in urls[:check_url_count]:
         r = requests.get(url)
         if r.status_code in [200, 204]:
             found += 1
         else:
             LOG.debug("file not found on %s", url)
-        if not exact_count and found == count:
+        if not exact and found == count:
             break
     if found < count:
-        LOG.warning("Found only %i copies of %s", found, name)
+        LOG.warning("Found only %i copies of '%s'", found, name)
         return False
-    elif exact_count and found > count:
+    elif exact and found > count:
+        LOG.warning("Found %i copies of '%s', which is more then should be",
+            found, name)
         return False
     else:
         return True
