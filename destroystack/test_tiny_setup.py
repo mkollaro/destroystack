@@ -72,3 +72,10 @@ class TestTinySetup():
         SWIFT.wait_for_replica_regeneration(check_nodes=REPLICA_COUNT)
         # wait until the replicas on handoff nodes get deleted
         SWIFT.wait_for_replica_regeneration(exact=True)
+
+    def test_two_disks_down_third_later(self):
+        self.server1.kill_disk()
+        self.server2.kill_disk()
+        SWIFT.wait_for_replica_regeneration()
+        self.server1.kill_disk()
+        SWIFT.wait_for_replica_regeneration()
