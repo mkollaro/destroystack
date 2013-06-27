@@ -45,29 +45,30 @@ class Server(object):
     def __init__(self, hostname,
             extra_disks=None, root_password=None, **kwargs):
         self.hostname = hostname
+        self.disks = extra_disks
 
         self.ssh = SSH(hostname)
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.ssh.load_system_host_keys()
         self.ssh.connect(hostname, username="root", password=root_password)
 
-        self.disks = extra_disks
-        self._mount_points = dict()
-        self.get_mount_points()
-
-    def kill_disk(self):
+    def kill_disk(self, disk=None):
         """ Force umount one of the mounted disks.
 
-        TODO: REALLY force it
-        TODO: perhaps use
+        :param disk: name of disk in /dev/ on the server, for example "sda",
+            use any available disk if None
+        :returns: label of disk that was killed, for example "sda"
+        TODO: REALLY force it, perhaps use
             https://www.kernel.org/doc/Documentation/device-mapper/dm-flakey.txt
         """
-        assert self.disks is not None
-        available_disks = list(self.get_mount_points().keys())
+        available_disks = self.get_mounted_disks()
         if not available_disks:
             raise Exception("No available disks")
-        disk = available_disks[0]
+        if disk is None:
+            disk = available_disks[0]
+        assert disk in available_disks
         self.ssh.run("umount --force -l /dev/" + disk)
+        return disk
 
     def safe_umount_disk(self, disk):
         """ Umount disk if it is mounted.
@@ -78,17 +79,25 @@ class Server(object):
             self.ssh.run("umount /dev/%s"% disk)
 
     def get_mount_points(self):
-        if self.disks is None:
-            return dict()
+        """ Get dict {disk:mountpoint} of mounted and managed disks.
 
-        self._mount_points = dict()
+        Only the disks given in configuration file (extra_disks) are taken into
+        consideration. Unmounted disks are not included.
+        Example: {"sda":"/srv/node/device1"}
+        """
+        mount_points = dict()
         for disk in self.disks:
             _, stdout, _ = self.ssh.run(
                 "mount|grep /dev/%s| awk '{print $3}'" % disk)
             output = stdout.readlines()
             if output:
-                self._mount_points[disk] = output[0].strip()
-        return self._mount_points
+                mount_points[disk] = output[0].strip()
+        return mount_points
+
+    def get_mounted_disks(self):
+        """ Return list of disk names like "sda".
+        """
+        return list(self.get_mount_points().keys())
 
 
 class SSH(paramiko.SSHClient):
