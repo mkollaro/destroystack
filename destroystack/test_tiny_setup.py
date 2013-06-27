@@ -19,6 +19,7 @@ import destroystack.tools.swift_manager as swift_manager
 import destroystack.tools.common as common
 
 SWIFT = None
+REPLICA_COUNT = 3
 
 
 def setup_module():
@@ -47,3 +48,12 @@ class TestTinySetup():
         self.server1.kill_disk()
         self.server2.kill_disk()
         SWIFT.wait_for_replica_regeneration()
+
+    def test_one_disk_down_restore(self):
+        disk = self.server1.kill_disk()
+        SWIFT.wait_for_replica_regeneration()
+        self.server1.restore_disk(disk)
+        # replicas should be on the first 3 nodes (primarily nodes)
+        SWIFT.wait_for_replica_regeneration(check_nodes=REPLICA_COUNT)
+        # wait until the replicas on handoff nodes get deleted
+        SWIFT.wait_for_replica_regeneration(exact=True)
