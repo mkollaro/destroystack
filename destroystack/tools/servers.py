@@ -78,6 +78,12 @@ class Server(object):
         if disk in self.get_mount_points().keys():
             self.ssh.run("umount /dev/%s"% disk)
 
+    def format_disk(self, disk):
+        LOG.info("Formatting disk /dev/%s on %s", disk, self.hostname)
+        assert disk not in self.get_mounted_disks()
+        assert disk in self.disks
+        self.ssh.run("mkfs.ext4 /dev/" + disk)
+
     def restore_disk(self, disk):
         """ Mount disk.
 
