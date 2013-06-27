@@ -50,8 +50,23 @@ class TestTinySetup():
         SWIFT.wait_for_replica_regeneration()
 
     def test_one_disk_down_restore(self):
+        # kill disk, restore it with all files intact
+
         disk = self.server1.kill_disk()
         SWIFT.wait_for_replica_regeneration()
+        self.server1.restore_disk(disk)
+        # replicas should be on the first 3 nodes (primarily nodes)
+        SWIFT.wait_for_replica_regeneration(check_nodes=REPLICA_COUNT)
+        # wait until the replicas on handoff nodes get deleted
+        SWIFT.wait_for_replica_regeneration(exact=True)
+
+    def test_disk_replacement(self):
+        # similar to 'test_one_disk_down_restore', but formats the disk
+
+        disk = self.server1.kill_disk()
+        SWIFT.wait_for_replica_regeneration()
+        # the disk died, let's replace it with a new empty one
+        self.server1.format_disk(disk)
         self.server1.restore_disk(disk)
         # replicas should be on the first 3 nodes (primarily nodes)
         SWIFT.wait_for_replica_regeneration(check_nodes=REPLICA_COUNT)
