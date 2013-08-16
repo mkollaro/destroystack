@@ -19,12 +19,15 @@ import destroystack.tools.swift_manager as swift_manager
 import destroystack.tools.common as common
 
 SWIFT = None
+CONFIG = None
 REPLICA_COUNT = 3
 
 
 def setup_module():
     global SWIFT
-    SWIFT = swift_manager.get_swift_small_setup_manager()
+    global CONFIG
+    CONFIG = common.get_config("config.swift_small_setup.json")
+    SWIFT = swift_manager.SwiftManager(CONFIG)
 
 def teardown_module():
     common.delete_testfiles()

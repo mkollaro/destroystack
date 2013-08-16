@@ -1,5 +1,5 @@
 {
-    "timeout": 60,
+    "timeout": 120,
     "services_password":"123456",
     "servers": [
         {
@@ -13,5 +13,11 @@
         "hostname": "SERVER3.COM",
         "extra_disks": ["vdb", "vdc", "vdd"]
         }
-    ]
+    ],
+    "setup_tools": {
+        "setup_script": "packstack_deploy.py"
+        "save_state_script": "openstack_save_state.py",
+        "load_state_script": "openstack_load_state.py",
+        "cleanup_script": ""
+    }
 }

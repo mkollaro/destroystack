@@ -26,6 +26,7 @@ class ConfigException(Exception):
 class Config(object):
     servers = list()
     keystone = dict()
+    setup_tools = dict()
     services_password = ''
     timeout = 0
 
@@ -39,6 +40,7 @@ class Config(object):
         self._theconfig = json.load(f)
         self.servers = self._theconfig["servers"]
         self.timeout = self._theconfig["timeout"]
+        self.timeout = self._theconfig["setup_tools"]
         self.services_password = self._theconfig["services_password"]
         assert self.servers
         assert self.timeout > 0

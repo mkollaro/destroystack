@@ -15,53 +15,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Swift management and connection """
-
 import swiftclient
 import logging
 import requests
 from time import sleep
-import destroystack.tools.config as config
 import destroystack.tools.servers as servers
+import destroystack.tools.common as common
 from destroystack.tools.timeout import timeout
 
 LOG  = logging.getLogger(__name__)
-CONFIG = config.Config()
-
-def get_swift_small_setup_manager():
-    """ Return a SwiftManager for the Swift small setup.
-
-    Expects that packstack has already run with the correct answer file.
-
-    NOTE: this will be replaced by some general resource broker that will
-    decide which servers to use for what and perhaps even allow parallel run if
-    enough servers are available (for example, if you have 6 servers, then the
-    first 3 would have its own Swift installation and run half the
-    swift_small_setup tests, the other 3 would have an independent Swift
-    installation and run the rest of them)
-    """
-    proxy_conf, data_conf = config.get_swift_small_setup_conf(CONFIG)
-    proxies = servers.create_servers(proxy_conf)
-    data_servers = servers.create_servers(data_conf)
-    return SwiftManager(proxy_servers=proxies, data_servers=data_servers,
-                        **CONFIG.keystone)
+TIMEOUT = common.get_timeout()
 
 
 class SwiftManager(swiftclient.client.Connection):
-    """ Manage Swift servers and connection.
+    """Manage Swift servers and connection.
 
-    :param auth_url: URL of keystone service
-    :param username: keystone user
-    :param password: keystone password
-    :param proxy_servers: list of Server objects that run the Swift services
-    :param data_servers: list of Server objects that have extra disks
+    :param config: dictionary created by "bin/generate_config_files.py", needs
+        a "keystone" item with "auth_url", "user" and "password" items and a
+        "swift" item with "proxy_servers" and "data_servers".
     """
-    def __init__(self, auth_url, username, password,
-                 proxy_servers, data_servers, **kwargs):
-        super(SwiftManager, self).__init__(auth_url, username, password,
-            auth_version='2', tenant_name=username)
-        self.proxy_servers = proxy_servers
-        self.data_servers = data_servers
+    def __init__(self, config):
+        keystone = config["keystone"]
+        super(SwiftManager, self).__init__(
+            keystone["auth_url"],
+            keystone["user"],
+            keystone["password"],
+            auth_version='2',
+            tenant_name=keystone["user"])
+        self.proxy_servers = \
+            servers.create_servers(config["swift"]["proxy_servers"])
+        self.data_servers = \
+            servers.create_servers(config["swift"]["data_servers"])
         self._set_mount_check()
         self._backup()
 
@@ -104,7 +88,7 @@ class SwiftManager(swiftclient.client.Connection):
         LOG.info("all replicas found")
         return True
 
-    @timeout(CONFIG.timeout, "The replicas were not consistent within timeout.")
+    @timeout(TIMEOUT, "The replicas were not consistent within timeout.")
     def wait_for_replica_regeneration(self, count=3, check_nodes=None,
                                       exact=False):
         """ Wait until there are 'count' replicas of everything.

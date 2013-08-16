@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import os
+import json
 import random
 import string
 
@@ -25,9 +26,21 @@ CONFIG_DIR = os.path.join(PROJ_DIR, "etc")
 BIN_DIR = os.path.join(PROJ_DIR, "bin")
 TESTFILE_DIR = os.path.join(PROJ_DIR, "test_files")
 
+class ConfigException(Exception):
+    pass
+
+def get_config(filename="config.json"):
+    """Load dict from a JSON configuration file in CONF_DIR."""
+    with open(os.path.join(CONFIG_DIR, filename)) as f:
+        config = json.load(f)
+    return config
+
+def get_timeout():
+    """Get the timeout configuration from etc/config.json"""
+    return get_config()["timeout"]
 
 def upload_files(swift, container, filename_list):
-    """ Upload files from the TESTFILE_DIR.
+    """Upload files from the TESTFILE_DIR.
 
     Creates the container if it doesn't exist.
     """
