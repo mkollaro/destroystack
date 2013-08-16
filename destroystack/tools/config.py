@@ -35,7 +35,7 @@ class Config(object):
         self._set_keystone()
 
     def _load_json(self):
-        f = open(common.PROJ_DIR + "/../etc/config.json")
+        f = open(common.CONFIG_DIR + "/config.json")
         self._theconfig = json.load(f)
         self.servers = self._theconfig["servers"]
         self.timeout = self._theconfig["timeout"]

@@ -19,7 +19,10 @@ import os
 import random
 import string
 
-PROJ_DIR = os.path.join(os.path.dirname(__file__), "..")
+PROJ_DIR = os.path.join(os.path.dirname(__file__), "..", "..")
+PROJ_DIR = os.path.normpath(PROJ_DIR)
+CONFIG_DIR = os.path.join(PROJ_DIR, "etc")
+BIN_DIR = os.path.join(PROJ_DIR, "bin")
 TESTFILE_DIR = os.path.join(PROJ_DIR, "test_files")
 
 

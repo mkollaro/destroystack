@@ -47,7 +47,7 @@ def _get_topology_description(proxy_configs, dataserver_configs):
 def main():
     """ Generate answer files for packstack
     """
-    path = join(common.PROJ_DIR, "..", "etc",
+    path = join(common.CONFIG_DIR,
                 "packstack.swiftsmallsetup.answfile")
     conf = config.Config()
     proxy_conf, data_conf = config.get_swift_small_setup_conf(conf)
