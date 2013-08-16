@@ -28,19 +28,19 @@ from destroystack.tools.timeout import timeout
 LOG  = logging.getLogger(__name__)
 CONFIG = config.Config()
 
-def get_tiny_setup_manager():
-    """ Return a SwiftManager for the tiny setup.
+def get_swift_small_setup_manager():
+    """ Return a SwiftManager for the Swift small setup.
 
     Expects that packstack has already run with the correct answer file.
 
-    NOTE: this will be replaced by some general resource broker that will decide
-    which servers to use for what and perhaps even allow parallel run if enough
-    servers are available (for example, if you have 6 servers, then the first 3
-    would have its own Swift installation and run half the tiny_setup tests, the
-    other 3 would have an independent Swift installation and run the rest of
-    them)
+    NOTE: this will be replaced by some general resource broker that will
+    decide which servers to use for what and perhaps even allow parallel run if
+    enough servers are available (for example, if you have 6 servers, then the
+    first 3 would have its own Swift installation and run half the
+    swift_small_setup tests, the other 3 would have an independent Swift
+    installation and run the rest of them)
     """
-    proxy_conf, data_conf = config.get_tiny_setup_conf(CONFIG)
+    proxy_conf, data_conf = config.get_swift_small_setup_conf(CONFIG)
     proxies = servers.create_servers(proxy_conf)
     data_servers = servers.create_servers(data_conf)
     return SwiftManager(proxy_servers=proxies, data_servers=data_servers,

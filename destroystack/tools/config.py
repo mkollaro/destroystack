@@ -84,7 +84,7 @@ def get_proxies_or_dataservers(conf,
     proxies = [rest.pop() for _ in range(0, proxy_count)]
     return (combined + proxies, combined + dataservers)
 
-def get_tiny_setup_conf(conf):
+def get_swift_small_setup_conf(conf):
     """ Decide which servers to use for what depending on available servers
 
     Use 1 proxy + 2 dataservers if 3 servers are available, improvise otherwise.

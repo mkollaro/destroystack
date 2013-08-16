@@ -47,9 +47,10 @@ def _get_topology_description(proxy_configs, dataserver_configs):
 def main():
     """ Generate answer files for packstack
     """
-    path = join(common.PROJ_DIR, "..", "etc", "packstack.tinysetup.answfile")
+    path = join(common.PROJ_DIR, "..", "etc",
+                "packstack.swiftsmallsetup.answfile")
     conf = config.Config()
-    proxy_conf, data_conf = config.get_tiny_setup_conf(conf)
+    proxy_conf, data_conf = config.get_swift_small_setup_conf(conf)
     main_ip = gethostbyname(proxy_conf[0]["hostname"])
     nodes = _get_storage_nodes_description(data_conf)
     with open(path, 'w') as out:

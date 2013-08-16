@@ -48,7 +48,7 @@ use may cause false positives.
 
 If you chose to use packstack, install Swift like this:
 
-    $ packstack --answer-file=etc/packstack.tinysetup.answfile
+    $ packstack --answer-file=etc/packstack.swiftsmallsetup.answfile
 
 TODO: There will be multiple setups and packstack (or other tool, set in a
 configuration file) will be probably run in the module or package setup

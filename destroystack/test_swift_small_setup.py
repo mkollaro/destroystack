@@ -24,12 +24,12 @@ REPLICA_COUNT = 3
 
 def setup_module():
     global SWIFT
-    SWIFT = swift_manager.get_tiny_setup_manager()
+    SWIFT = swift_manager.get_swift_small_setup_manager()
 
 def teardown_module():
     common.delete_testfiles()
 
-class TestTinySetup():
+class TestSwiftSmallSetup():
     def setUp(self):
         self.server1 = SWIFT.data_servers[0]
         self.server2 = self.server1
