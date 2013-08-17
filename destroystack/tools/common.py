@@ -19,12 +19,15 @@ import os
 import json
 import random
 import string
+from optparse import OptionParser
 
 PROJ_DIR = os.path.join(os.path.dirname(__file__), "..", "..")
 PROJ_DIR = os.path.normpath(PROJ_DIR)
 CONFIG_DIR = os.path.join(PROJ_DIR, "etc")
 BIN_DIR = os.path.join(PROJ_DIR, "bin")
 TESTFILE_DIR = os.path.join(PROJ_DIR, "test_files")
+
+SUPPORTED_SETUPS = ["swift_small_setup"]
 
 class ConfigException(Exception):
     pass
@@ -38,6 +41,14 @@ def get_config(filename="config.json"):
 def get_timeout():
     """Get the timeout configuration from etc/config.json"""
     return get_config()["timeout"]
+
+
+def get_option_parser():
+    parser = OptionParser()
+    parser.add_option("-s", "--setup", dest="setup",
+                      help="Which OpenStack setup to deploy. "
+                           "Supported are: %s" % SUPPORTED_SETUPS)
+    return parser
 
 def upload_files(swift, container, filename_list):
     """Upload files from the TESTFILE_DIR.
@@ -86,3 +97,20 @@ def random_string(min_lenght=1, max_length=20):
     chars = string.ascii_letters + string.digits
 
     return ''.join([random.choice(chars) for _ in range(length)])
+
+def represents_int(s):
+    try:
+        int(s)
+        return True
+    except ValueError:
+        return False
+
+def get_name_from_hostname(hostname):
+    if '.' not in hostname:
+        return hostname
+
+    name = hostname.split('.')[0]
+    if represents_int(name):
+        # not really a hostname, just IP
+        name = hostname
+    return name

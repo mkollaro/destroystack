@@ -21,6 +21,8 @@ import paramiko
 import logging
 import subprocess
 
+import destroystack.tools.common as common
+
 LOG  = logging.getLogger(__name__)
 
 
@@ -45,6 +47,7 @@ class LocalServer():
         output = subprocess.check_call(cmd, shell=True, **kwargs)
         if output:
             LOG.info("Output: %s", output)
+        return output
 
 
 class Server(object):
@@ -56,7 +59,7 @@ class Server(object):
     def __init__(self, hostname,
             username="root", password=None, extra_disks=None, **kwargs):
         self.hostname = hostname
-        self.name = hostname.split('.')[0]
+        self.name = common.get_name_from_hostname(hostname)
         self.disks = extra_disks
         if "root_password" in kwargs and not password:
             username = "root"
@@ -140,6 +143,7 @@ class SSH(paramiko.SSHClient):
     def __init__(self, hostname):
         super(SSH, self).__init__()
         self.hostname = hostname
+        self.name = common.get_name_from_hostname(hostname)
 
     def __call__(self, command, ignore_failure=False, log_error=True):
         """ Same as exec_command, but checks for errors.
@@ -152,11 +156,11 @@ class SSH(paramiko.SSHClient):
         :param log_error: if an error occurs, log the command, stdout and stderr
         :raises: ServerException
         """
+        LOG.info("SSH command on %s: %s", self.name, command)
         stdin, stdout, stderr = self.exec_command(command)
         if not ignore_failure and stdout.channel.recv_exit_status() != 0:
             err = " ".join(stderr.readlines())
             if log_error:
-                LOG.info("SSH command on %s:\n%s", self.hostname, command)
                 LOG.info("SSH command stdout:\n" + " ".join(stdout.readlines()))
                 LOG.error("SSH command stderr:\n" + err)
             raise ServerException(err)
