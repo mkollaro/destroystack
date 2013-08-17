@@ -26,6 +26,9 @@ from destroystack.tools.timeout import timeout
 LOG  = logging.getLogger(__name__)
 TIMEOUT = common.get_timeout()
 
+# workaround for some DEBUG messages that don't get captured by nose
+swiftclient.client.logger.setLevel(logging.INFO)
+
 
 class SwiftManager(swiftclient.client.Connection):
     """Manage Swift servers and connection.
