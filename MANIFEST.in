@@ -1,3 +1,4 @@
 include LICENSE
 include CHANGELOG README.md
-graft doc
+include etc/config.json.sample
+graft bin
