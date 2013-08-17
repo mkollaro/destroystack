@@ -1,4 +1,4 @@
-etc/config.json
+etc/*.json
 etc/packstack.*.answfile
 destroystack/test_files/
 
@@ -14,7 +14,6 @@ dist
 build
 eggs
 parts
-bin
 var
 sdist
 develop-eggs
