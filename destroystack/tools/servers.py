@@ -41,11 +41,12 @@ class ServerException(Exception):
 
 
 class LocalServer():
-    def cmd(self, cmd, **kwargs):
+    def cmd(self, cmd, log_cmd=True, log_output=True, **kwargs):
         """Wrapper around subprocess.check_call() for logging purposes."""
-        LOG.info("Running local command: %s", cmd)
+        if log_cmd:
+            LOG.info("Running local command: %s", cmd)
         output = subprocess.check_call(cmd, shell=True, **kwargs)
-        if output:
+        if log_output and output:
             LOG.info("Output: %s", output)
         return output
 
@@ -125,7 +126,7 @@ class Server(object):
         mount_points = dict()
         for disk in self.disks:
             _, stdout, _ = self.cmd(
-                "mount|grep /dev/%s| awk '{print $3}'" % disk)
+                "mount|grep /dev/%s| awk '{print $3}'" % disk, log_cmd=False)
             output = stdout.readlines()
             if output:
                 mount_points[disk] = output[0].strip()
@@ -145,7 +146,8 @@ class SSH(paramiko.SSHClient):
         self.hostname = hostname
         self.name = common.get_name_from_hostname(hostname)
 
-    def __call__(self, command, ignore_failure=False, log_error=True):
+    def __call__(self, command, ignore_failure=False,
+                 log_cmd=True, log_output=False, log_error=True):
         """ Same as exec_command, but checks for errors.
 
         If an error occurs, it logs the command, stdout and stderr.
@@ -153,15 +155,27 @@ class SSH(paramiko.SSHClient):
         :param command: any bash command
         :param ignore_failure: don't raise an exception if an error occurs (and
             don't log the output either)
-        :param log_error: if an error occurs, log the command, stdout and stderr
+        :param log_error: if an error occurs, log stdout and stderr; don't log
+            them again if log_output is true
+        :param log_output: always log output
+        :param log_cmd: log the command and the name of server where it is run
         :raises: ServerException
         """
-        LOG.info("SSH command on %s: %s", self.name, command)
+        if log_cmd:
+            LOG.info("SSH command on %s: %s", self.name, command)
         stdin, stdout, stderr = self.exec_command(command)
+        out = " ".join(stdout.readlines()).strip()
+        err = " ".join(stderr.readlines()).strip()
+        if log_output:
+            _log_output(out, err)
         if not ignore_failure and stdout.channel.recv_exit_status() != 0:
-            err = " ".join(stderr.readlines())
-            if log_error:
-                LOG.info("SSH command stdout:\n" + " ".join(stdout.readlines()))
-                LOG.error("SSH command stderr:\n" + err)
+            if log_error and not log_output:
+                _log_output(out, err)
             raise ServerException(err)
         return stdin, stdout, stderr
+
+def _log_output(stdout, stderr):
+    if stdout:
+        LOG.info("SSH command stdout:\n" + stdout)
+    if stderr:
+        LOG.error("SSH command stderr:\n" + stderr)
