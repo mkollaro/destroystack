@@ -15,15 +15,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" SSH connection to Swift servers, helper functions. """
+"""SSH connection to Swift servers, helper functions."""
 
 import paramiko
 import logging
+import subprocess
 
 LOG  = logging.getLogger(__name__)
 
 
 def create_servers(configs):
+    """Create Server objects out of a list of server configuration dicts."""
     servers = []
     for config in configs:
         servers.append(Server(**config))
@@ -36,6 +38,15 @@ class ServerException(Exception):
     pass
 
 
+class LocalServer():
+    def cmd(self, cmd, **kwargs):
+        """Wrapper around subprocess.check_call() for logging purposes."""
+        LOG.info("Running local command: %s", cmd)
+        output = subprocess.check_call(cmd, shell=True, **kwargs)
+        if output:
+            LOG.info("Output: %s", output)
+
+
 class Server(object):
     """ Manage server.
 
@@ -43,15 +54,18 @@ class Server(object):
     mount points.
     """
     def __init__(self, hostname,
-            extra_disks=None, root_password=None, **kwargs):
+            username="root", password=None, extra_disks=None, **kwargs):
         self.hostname = hostname
         self.name = hostname.split('.')[0]
         self.disks = extra_disks
+        if "root_password" in kwargs and not password:
+            username = "root"
+            password = kwargs["root_password"]
 
-        self.ssh = SSH(hostname)
-        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.ssh.load_system_host_keys()
-        self.ssh.connect(hostname, username="root", password=root_password)
+        self.cmd = SSH(hostname)
+        self.cmd.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.cmd.load_system_host_keys()
+        self.cmd.connect(hostname, username=username, password=password)
 
     def kill_disk(self, disk=None):
         """ Force umount one of the mounted disks.
@@ -69,7 +83,7 @@ class Server(object):
             disk = available_disks[0]
         assert disk in available_disks
         LOG.info("Killing disk /dev/%s on %s", disk, self.name)
-        self.ssh("umount --force -l /dev/" + disk)
+        self.cmd("umount --force -l /dev/" + disk)
         return disk
 
     def safe_umount_disk(self, disk):
@@ -78,13 +92,13 @@ class Server(object):
         TODO: wait a bit if the device is busy
         """
         if disk in self.get_mount_points().keys():
-            self.ssh("umount /dev/%s"% disk)
+            self.cmd("umount /dev/%s"% disk)
 
     def format_disk(self, disk):
         LOG.info("Formatting disk /dev/%s on %s", disk, self.name)
         assert disk not in self.get_mounted_disks()
         assert disk in self.disks
-        self.ssh("mkfs.ext4 /dev/" + disk)
+        self.cmd("mkfs.ext4 /dev/" + disk)
 
     def restore_disk(self, disk):
         """ Mount disk, restore permissions and SELinux contexts.
@@ -94,9 +108,9 @@ class Server(object):
         """
         assert disk not in self.get_mounted_disks()
         LOG.info("Restoring disk /dev/%s on %s", disk, self.name)
-        self.ssh("mount /dev/" + disk)
-        self.ssh("chown -R swift:swift /srv/node/*")
-        self.ssh("restorecon -R /srv/*")
+        self.cmd("mount /dev/" + disk)
+        self.cmd("chown -R swift:swift /srv/node/*")
+        self.cmd("restorecon -R /srv/*")
 
     def get_mount_points(self):
         """ Get dict {disk:mountpoint} of mounted and managed disks.
@@ -107,7 +121,7 @@ class Server(object):
         """
         mount_points = dict()
         for disk in self.disks:
-            _, stdout, _ = self.ssh(
+            _, stdout, _ = self.cmd(
                 "mount|grep /dev/%s| awk '{print $3}'" % disk)
             output = stdout.readlines()
             if output:
@@ -121,7 +135,7 @@ class Server(object):
 
 
 class SSH(paramiko.SSHClient):
-    """ Wrapper around paramiko for better error handling and logging. """
+    """Wrapper around paramiko for better error handling and logging."""
 
     def __init__(self, hostname):
         super(SSH, self).__init__()
