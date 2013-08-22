@@ -125,11 +125,10 @@ class Server(object):
         """
         mount_points = dict()
         for disk in self.disks:
-            _, stdout, _ = self.cmd(
-                "mount|grep /dev/%s| awk '{print $3}'" % disk, log_cmd=False)
-            output = stdout.readlines()
-            if output:
-                mount_points[disk] = output[0].strip()
+            stdout, _ = self.cmd(
+                "mount|grep /dev/%s| awk '{print $3}'" % disk)
+            if stdout:
+                mount_points[disk] = stdout[0].strip()
         return mount_points
 
     def get_mounted_disks(self):
@@ -148,7 +147,7 @@ class SSH(paramiko.SSHClient):
 
     def __call__(self, command, ignore_failure=False,
                  log_cmd=True, log_output=False, log_error=True):
-        """ Same as exec_command, but checks for errors.
+        """ Similar to exec_command, but checks for errors.
 
         If an error occurs, it logs the command, stdout and stderr.
 
@@ -163,19 +162,19 @@ class SSH(paramiko.SSHClient):
         """
         if log_cmd:
             LOG.info("SSH command on %s: %s", self.name, command)
-        stdin, stdout, stderr = self.exec_command(command)
-        out = " ".join(stdout.readlines()).strip()
-        err = " ".join(stderr.readlines()).strip()
+        _, stdout, stderr = self.exec_command(command)
+        out = stdout.readlines()
+        err = stderr.readlines()
         if log_output:
             _log_output(out, err)
         if not ignore_failure and stdout.channel.recv_exit_status() != 0:
             if log_error and not log_output:
                 _log_output(out, err)
             raise ServerException(err)
-        return stdin, stdout, stderr
+        return out, err
 
 def _log_output(stdout, stderr):
     if stdout:
-        LOG.info("SSH command stdout:\n" + stdout)
+        LOG.info("SSH command stdout:\n" + " ".join(stdout).strip())
     if stderr:
-        LOG.error("SSH command stderr:\n" + stderr)
+        LOG.error("SSH command stderr:\n" + " ".join(stderr).strip())

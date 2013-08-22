@@ -103,6 +103,7 @@ class SwiftManager(swiftclient.client.Connection):
         :param exact: also fail if there are more than 'count' replicas
         :raises TimeoutException: after time in seconds set in the config file
         """
+        LOG.info("Waiting until there is the right number of replicas")
         while not self.replicas_are_ok(count, check_nodes, exact):
             sleep(5)
 
@@ -152,6 +153,7 @@ class SwiftManager(swiftclient.client.Connection):
         data servers. While doing this, all Swift services are stopped and then
         started again.
         """
+        LOG.info("Saving Swift state")
         try:
             self._stop_services()
             for server in self.proxy_servers:
@@ -179,6 +181,7 @@ class SwiftManager(swiftclient.client.Connection):
         was when making the backup. While doing this, Swift services are stopped
         and then started again.
         """
+        LOG.info("Restoring Swift state")
         try:
             self._stop_services()
             for server in self.proxy_servers:
@@ -220,9 +223,8 @@ class SwiftManager(swiftclient.client.Connection):
             server.cmd("swift-init proxy restart")
 
     def _get_running_services(self, server):
-        _, stdout, _ = server.cmd("swift-init all status",
-                        ignore_failure=True)
-        return [line.split()[0] for line in stdout.readlines()
+        output, _ = server.cmd("swift-init all status", ignore_failure=True)
+        return [line.split()[0] for line in output
                 if not line.startswith("No ")]
 
     def _get_account_hash(self):
@@ -258,9 +260,9 @@ class SwiftManager(swiftclient.client.Connection):
             object_name = ''
         cmd = "swift-get-nodes -a /etc/swift/%s.ring.gz %s %s %s |grep curl" \
                 % (ring, account_hash, container_name, object_name)
-        _, stdout, _ = self.proxy_servers[0].cmd(cmd)
-        urls = [line.split('#')[0].split()[-1].strip('"\n ')
-                    for line in stdout.readlines()]
+        output, _ = self.proxy_servers[0].cmd(cmd)
+        urls = [line.split('#')[0].split()[-1].strip('" ')
+                    for line in output]
         return urls
 
 

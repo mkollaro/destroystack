@@ -19,6 +19,7 @@ import os
 import json
 import random
 import string
+import logging
 from optparse import OptionParser
 
 PROJ_DIR = os.path.join(os.path.dirname(__file__), "..", "..")
@@ -28,6 +29,8 @@ BIN_DIR = os.path.join(PROJ_DIR, "bin")
 TESTFILE_DIR = os.path.join(PROJ_DIR, "test_files")
 
 SUPPORTED_SETUPS = ["swift_small_setup"]
+
+LOG  = logging.getLogger(__name__)
 
 class ConfigException(Exception):
     pass
@@ -68,6 +71,7 @@ def populate_swift_with_random_files(swift, prefix='',
     :param container_count: how many containers to create
     :param files_per_container: how many files to upload per container
     """
+    LOG.info("Uploading random files to Swift")
     containers = [prefix + "container" + str(i)
                     for i in range(0, container_count)]
     files = [prefix + "file" + str(i) + ".txt"
@@ -80,6 +84,7 @@ def populate_swift_with_random_files(swift, prefix='',
     for container in containers:
         upload_files(swift, container, files[start:start+files_per_container])
         start += files_per_container
+    LOG.info("Finished uploading random files to Swift")
 
 def delete_testfiles(prefix=''):
     """ Delete all *.txt file in test_files directory
