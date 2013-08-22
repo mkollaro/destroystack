@@ -23,6 +23,7 @@ from os import path
 
 import destroystack.tools.common as common
 
+logging.basicConfig(level=logging.INFO)
 LOG  = logging.getLogger(__name__)
 
 
@@ -32,20 +33,13 @@ def main():
 
 
 def generate_swift_small_setup_config(general_config):
+    """Write the config file"""
     filename = "config.swift_small_setup.json"
     swift_small_config = _get_swift_small_setup_config(general_config)
     with open(path.join(common.CONFIG_DIR, filename), 'w') as f:
         json.dump(swift_small_config, f, indent=4)
-
-
-def _get_keystone(server, password):
-    result = dict()
-    url = "http://" + server["hostname"] + ":5000/v2.0/"
-    result["server"] = server
-    result["auth_url"] = url
-    result["user"] = "admin"
-    result["password"] = password
-    return result
+    LOG.info("Config file for the Swift small setup:\n%s",
+            json.dumps(swift_small_config, indent=4))
 
 
 def _get_commands(tools, options):
@@ -96,12 +90,27 @@ def _get_swift_small_setup_config(general_config):
     new_config = dict()
     new_config["swift"] = _get_swift_servers(servers, *counts)
 
-    keystone = new_config["swift"]["proxy_servers"][0]
-    new_config["keystone"] = _get_keystone(keystone,
-                                           general_config["services_password"])
+    k = new_config["swift"]["proxy_servers"][0]
+    new_config["keystone"] = _get_keystone(k, general_config["keystone"])
     tools = general_config["setup_tools"]
-    new_config["commands"] = _get_commands(tools, "--setup=swift-small")
+    new_config["commands"] = _get_commands(tools, "--setup=swift_small")
     return new_config
+
+
+def _get_keystone(server, keystone_conf):
+    """
+    :param server: a dict with the keystone server info, like
+        {"hostname":"abc.com", "root_password":"123"}
+    :param keystone_conf: a dict with keystone settings
+        {"user":"admin", "password":"123456"}
+    """
+    result = dict()
+    url = "http://" + server["hostname"] + ":5000/v2.0/"
+    result["server"] = server
+    result["auth_url"] = url
+    result["user"] = keystone_conf["user"]
+    result["password"] = keystone_conf["password"]
+    return result
 
 
 def _get_swift_servers(servers,
