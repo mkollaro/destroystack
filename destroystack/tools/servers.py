@@ -104,6 +104,11 @@ class Server(object):
         assert disk in self.disks
         self.cmd("mkfs.ext4 /dev/" + disk)
 
+    def format_extra_disks(self):
+        cmd = ["(mkfs.ext4 /dev/%s > /dev/null)&" % d for d in self.disks]
+        cmd.append("wait")
+        self.cmd(" ".join(cmd))
+
     def restore_disk(self, disk):
         """ Mount disk, restore permissions and SELinux contexts.
 

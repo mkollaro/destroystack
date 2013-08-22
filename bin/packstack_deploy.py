@@ -49,21 +49,24 @@ def main():
 
 
 def deploy_swift_small_setup(server):
-    """Install keystone+swift proxy on one server, data servers on other."""
+    """Install keystone+swift proxy on one server, data servers on other.
+
+    Also formats the extra disks provided to the data servers.
+    """
     config = common.get_config("config.swift_small_setup.json")
-    keystone = gethostbyname(config["keystone"]["server"]["hostname"])
-    proxy_servers = [gethostbyname(s["hostname"])
-                     for s in config["swift"]["proxy_servers"]]
-    data_servers = [gethostbyname(s["hostname"])
-                    for s in config["swift"]["data_servers"]]
+    keystone = _get_ips([config["keystone"]["server"]])
+    proxy_servers = _get_ips(config["swift"]["proxy_servers"])
+    data_servers = _get_ips(config["swift"]["data_servers"])
     data_nodes = _get_swift_storage_nodes(config["swift"]["data_servers"])
-    hosts = [keystone]
+    hosts = keystone
     hosts.extend(data_servers)
+
+    _format_extra_disks(config["swift"]["data_servers"])
 
     packstack_opt = PACKSTACK_DEFAULT_OPTIONS
     packstack_opt["install-hosts"] = ",".join(hosts)
     packstack_opt["os-swift-install"] = "y"
-    packstack_opt["keystone-host"] = keystone
+    packstack_opt["keystone-host"] = keystone[0]
     packstack_opt["os-swift-proxy"] = ",".join(proxy_servers)
     packstack_opt["os-swift-storage"] = ",".join(data_nodes)
 
@@ -142,6 +145,17 @@ def _get_swift_storage_nodes(dataserver_configs):
             ip = gethostbyname(server["hostname"])
             storage.append(ip + "/" + disk)
     return storage
+
+
+def _format_extra_disks(data_servers_config):
+    for config in data_servers_config:
+        LOG.info("Formatting extra disks on %s" % config["hostname"])
+        server = servers.Server(**config)
+        server.format_extra_disks()
+
+
+def _get_ips(config):
+    return [gethostbyname(s["hostname"]) for s in config]
 
 
 if __name__ == '__main__':
