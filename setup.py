@@ -12,7 +12,6 @@ setup(
     long_description=open('README.md').read(),
     install_requires=[
         'nose >= 1.1.2',
-        'paramiko >= 1.7.5',
         'python-swiftclient >= 1.4.0',
     ],
 )
