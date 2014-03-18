@@ -18,14 +18,15 @@
 import os.path
 import destroystack.tools.common as common
 
+
 def setUpPackage():
     if not os.path.exists(common.TESTFILE_DIR):
         os.makedirs(common.TESTFILE_DIR)
     # TODO generate config files from the main config file
-	# TODO install swift on the server using packstack
-	# TODO check setup sanity
+    # TODO install swift on the server using packstack
+    # TODO check setup sanity
 
 
 def tearDownPackage():
     pass
-	# TODO: remove swift, clean up the virtual disks
+    # TODO: remove swift, clean up the virtual disks

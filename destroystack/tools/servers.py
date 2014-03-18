@@ -23,7 +23,7 @@ import subprocess
 
 import destroystack.tools.common as common
 
-LOG  = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 def create_servers(configs):
@@ -58,7 +58,7 @@ class Server(object):
     mount points.
     """
     def __init__(self, hostname,
-            username="root", password=None, extra_disks=None, **kwargs):
+                 username="root", password=None, extra_disks=None, **kwargs):
         self.hostname = hostname
         self.name = common.get_name_from_hostname(hostname)
         self.disks = extra_disks
@@ -78,7 +78,7 @@ class Server(object):
             use any available disk if None
         :returns: label of disk that was killed, for example "sda"
         TODO: REALLY force it, perhaps use
-            https://www.kernel.org/doc/Documentation/device-mapper/dm-flakey.txt
+        https://www.kernel.org/doc/Documentation/device-mapper/dm-flakey.txt
         """
         available_disks = self.get_mounted_disks()
         if not available_disks:
@@ -96,7 +96,7 @@ class Server(object):
         TODO: wait a bit if the device is busy
         """
         if disk in self.get_mount_points().keys():
-            self.cmd("umount /dev/%s"% disk)
+            self.cmd("umount /dev/%s" % disk)
 
     def format_disk(self, disk):
         LOG.info("Formatting disk /dev/%s on %s", disk, self.name)
@@ -177,6 +177,7 @@ class SSH(paramiko.SSHClient):
                 _log_output(out, err)
             raise ServerException(err)
         return out, err
+
 
 def _log_output(stdout, stderr):
     if stdout:

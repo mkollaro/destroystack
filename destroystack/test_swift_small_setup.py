@@ -29,8 +29,10 @@ def setup_module():
     CONFIG = common.get_config("config.swift_small_setup.json")
     SWIFT = swift_manager.SwiftManager(CONFIG)
 
+
 def teardown_module():
     common.delete_testfiles()
+
 
 class TestSwiftSmallSetup():
     def setUp(self):

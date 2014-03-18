@@ -23,7 +23,7 @@ import destroystack.tools.servers as servers
 import destroystack.tools.common as common
 from destroystack.tools.timeout import timeout
 
-LOG  = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 TIMEOUT = common.get_timeout()
 
 # workaround for some DEBUG messages that don't get captured by nose
@@ -128,7 +128,7 @@ class SwiftManager(swiftclient.client.Connection):
                 server.cmd("rm -fr /srv/node/device*/*")
                 for disk in server.disks:
                     server.cmd("mkfs.ext4 /dev/%s && mount /dev/%s"
-                                    % (disk, disk))
+                               % (disk, disk))
         finally:
             self._restore()
 
@@ -170,7 +170,7 @@ class SwiftManager(swiftclient.client.Connection):
                     ignore_failure=True)
                 for device in server.get_mount_points().values():
                     server.cmd("cp -rp %s /var/tmp/swift-backup/devices/"
-                                    % device)
+                               % device)
         finally:
             self._start_services()
 
@@ -178,8 +178,8 @@ class SwiftManager(swiftclient.client.Connection):
         """ Restore backups of Swift made by '_backup()'.
 
         Symmetric method to '_backup'. Brings Swift back to the state where it
-        was when making the backup. While doing this, Swift services are stopped
-        and then started again.
+        was when making the backup. While doing this, Swift services are
+        stopped and then started again.
         """
         LOG.info("Restoring Swift state")
         try:
@@ -235,12 +235,13 @@ class SwiftManager(swiftclient.client.Connection):
         return self.url.split('/')[-1]
 
     def _get_replicas_direct_urls(self, account_hash, container_name=None,
-                                 object_name=None):
+                                  object_name=None):
         """ Return a tuple of the URLs of replicas.
 
-        The returned URLs are where the account/container/object replicas can be
-        directly accessed. The object (or anything else) doesn't actually need
-        to exist, it will give you a URL where it would exist if you created it.
+        The returned URLs are where the account/container/object replicas can
+        be directly accessed. The object (or anything else) doesn't actually
+        need to exist, it will give you a URL where it would exist if you
+        created it.
 
         The first 'replica_count' (normally set to 3) items returned are
         primarily locations where the data will be unless there was a failure,
@@ -259,10 +260,10 @@ class SwiftManager(swiftclient.client.Connection):
             container_name = ''
             object_name = ''
         cmd = "swift-get-nodes -a /etc/swift/%s.ring.gz %s %s %s |grep curl" \
-                % (ring, account_hash, container_name, object_name)
+              % (ring, account_hash, container_name, object_name)
         output, _ = self.proxy_servers[0].cmd(cmd)
         urls = [line.split('#')[0].split()[-1].strip('" ')
-                    for line in output]
+                for line in output]
         return urls
 
 
@@ -289,7 +290,7 @@ def file_urls_ok(urls, name, count=3, check_url_count=None, exact=False):
         return False
     elif exact and found > count:
         LOG.warning("Found %i copies of '%s', which is more then should be",
-            found, name)
+                    found, name)
         return False
     else:
         return True

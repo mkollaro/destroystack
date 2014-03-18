@@ -30,16 +30,19 @@ TESTFILE_DIR = os.path.join(PROJ_DIR, "test_files")
 
 SUPPORTED_SETUPS = ["swift_small_setup"]
 
-LOG  = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
+
 
 class ConfigException(Exception):
     pass
+
 
 def get_config(filename="config.json"):
     """Load dict from a JSON configuration file in CONF_DIR."""
     with open(os.path.join(CONFIG_DIR, filename)) as f:
         config = json.load(f)
     return config
+
 
 def get_timeout():
     """Get the timeout configuration from etc/config.json"""
@@ -53,6 +56,7 @@ def get_option_parser():
                            "Supported are: %s" % SUPPORTED_SETUPS)
     return parser
 
+
 def upload_files(swift, container, filename_list):
     """Upload files from the TESTFILE_DIR.
 
@@ -63,8 +67,9 @@ def upload_files(swift, container, filename_list):
         f = open(os.path.join(TESTFILE_DIR, filename))
         swift.put_object(container, filename, f)
 
+
 def populate_swift_with_random_files(swift, prefix='',
-                                    container_count=5, files_per_container=5):
+                                     container_count=5, files_per_container=5):
     """ Create random files in test_files dir and upload them to Swift.
 
     :param prefix: prefix before container and file names
@@ -73,9 +78,9 @@ def populate_swift_with_random_files(swift, prefix='',
     """
     LOG.info("Uploading random files to Swift")
     containers = [prefix + "container" + str(i)
-                    for i in range(0, container_count)]
+                  for i in range(0, container_count)]
     files = [prefix + "file" + str(i) + ".txt"
-                    for i in range(0, container_count*files_per_container)]
+             for i in range(0, container_count*files_per_container)]
     for filename in files:
         f = open(os.path.join(TESTFILE_DIR, filename), 'w')
         f.write(random_string()+'\n')
@@ -85,6 +90,7 @@ def populate_swift_with_random_files(swift, prefix='',
         upload_files(swift, container, files[start:start+files_per_container])
         start += files_per_container
     LOG.info("Finished uploading random files to Swift")
+
 
 def delete_testfiles(prefix=''):
     """ Delete all *.txt file in test_files directory
@@ -96,6 +102,7 @@ def delete_testfiles(prefix=''):
         if f.endswith(".txt") and f.startswith(prefix):
             os.remove(f)
 
+
 def random_string(min_lenght=1, max_length=20):
     """ Generate random string made out of alphanumeric characters. """
     length = random.randint(min_lenght, max_length)
@@ -103,12 +110,14 @@ def random_string(min_lenght=1, max_length=20):
 
     return ''.join([random.choice(chars) for _ in range(length)])
 
+
 def represents_int(s):
     try:
         int(s)
         return True
     except ValueError:
         return False
+
 
 def get_name_from_hostname(hostname):
     if '.' not in hostname:

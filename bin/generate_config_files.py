@@ -24,7 +24,7 @@ from os import path
 import destroystack.tools.common as common
 
 logging.basicConfig(level=logging.INFO)
-LOG  = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 
 def main():
@@ -39,7 +39,7 @@ def generate_swift_small_setup_config(general_config):
     with open(path.join(common.CONFIG_DIR, filename), 'w') as f:
         json.dump(swift_small_config, f, indent=4)
     LOG.info("Config file for the Swift small setup:\n%s",
-            json.dumps(swift_small_config, indent=4))
+             json.dumps(swift_small_config, indent=4))
 
 
 def _get_commands(tools, options):
@@ -49,6 +49,7 @@ def _get_commands(tools, options):
     cmd["module_teardown"] = ""
     cmd["test_setup"] = ""
     cmd["test_teardown"] = ""
+
     def get_path(script):
         return path.join(common.BIN_DIR, script)
 
@@ -70,14 +71,14 @@ def _get_commands(tools, options):
 def _get_swift_small_setup_config(general_config):
     """Create configuration for the Swift small setup.
 
-    Decide which servers to use for what depending on available servers.
-    Use 1 proxy + 2 dataservers if 3 servers are available, improvise otherwise.
+    Decide which servers to use for what depending on available servers.  Use 1
+    proxy + 2 dataservers if 3 servers are available, improvise otherwise.
 
     :param conf: Config object
     :returns: (proxy_list, datacenter_list)
     """
     servers = general_config["servers"]
-    counts = (0, 1, 2) # combined, proxies, datacenters
+    counts = (0, 1, 2)  # combined, proxies, datacenters
     msg = "Swift small setup tests. You may experience problems, \
            3 servers are recommended."
     if len(servers) == 2:
@@ -114,7 +115,7 @@ def _get_keystone(server, keystone_conf):
 
 
 def _get_swift_servers(servers,
-        combined_count=0, proxy_count=0, dataserver_count=0):
+                       combined_count=0, proxy_count=0, dataserver_count=0):
     """Decide which servers to use as proxies, dataservers or both.
 
     It will assign the servers with disk first to the dataservers, then to the
@@ -125,7 +126,8 @@ def _get_swift_servers(servers,
         to be used as a data center (or combined)
     :raises ConfigException: if there are less than
         proxy_count+dataserver_count+combined_count servers available in the
-        config or if you want more dataservers then there are servers with disks
+        config or if you want more dataservers then there are servers with
+        disks
     :returns: (proxy_list, datacenter_list) where the combined servers will be
         included in both
     """
