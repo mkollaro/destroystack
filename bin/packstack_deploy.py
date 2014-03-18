@@ -23,7 +23,7 @@ LOG = logging.getLogger(__name__)
 
 # packages that will be checked for or installed on either localhost or server
 # set in --execute_from
-REQUIRED_PACKAGES = ['packstack', 'openstack-utils']
+REQUIRED_PACKAGES = ['openstack-packstack', 'openstack-utils']
 
 PACKSTACK_DEFAULT_OPTIONS = {
     "CONFIG_GLANCE_INSTALL":            "n",
@@ -71,9 +71,9 @@ def deploy_swift_small_setup(server):
     config = common.get_config("config.swift_small_setup.json")
     keystone = _get_ips([config["keystone"]["server"]])
     proxy_servers = _get_ips(config["swift"]["proxy_servers"])
-    data_nodes = _get_swift_storage_nodes(config["swift"]["data_servers"])
 
-    _format_extra_disks(config["swift"]["data_servers"])
+    data_nodes = _prepare_extra_disks(config["swift"]["data_servers"])
+    print data_nodes
 
     packstack_opt = copy(PACKSTACK_DEFAULT_OPTIONS)
     packstack_opt["CONFIG_SWIFT_INSTALL"] = "y"
@@ -151,22 +151,25 @@ def _get_server(options):
     return server
 
 
-def _get_swift_storage_nodes(dataserver_configs):
-    """ Return a list in form ["ip.address/vda", "ip.address.2/vda"]
+def _prepare_extra_disks(data_servers_config):
+    """Format and partition disks if neccessary.
+
+    Return a list in form ["ip.address/vda", "ip.address.2/vda"]
     """
-    storage = list()
-    for server in dataserver_configs:
-        for disk in server['extra_disks']:
-            ip = gethostbyname(server["hostname"])
-            storage.append(ip + "/" + disk)
-    return storage
-
-
-def _format_extra_disks(data_servers_config):
+    description = list()
     for config in data_servers_config:
-        LOG.info("Formatting extra disks on %s" % config["hostname"])
         server = servers.Server(**config)
+        if len(server.disks) == 1:
+            LOG.info("Only one extra disk on %s, create partitions on it and"
+                     " use those instead" % config["hostname"])
+            servers.partition_single_extra_disk(server)
+        LOG.info("Formatting extra disks on %s" % config["hostname"])
         server.format_extra_disks()
+        # get description of devices for packstack answerfile
+        ip = gethostbyname(server.hostname)
+        devices = ['/'.join([ip, disk]) for disk in server.disks]
+        description.extend(devices)
+    return description
 
 
 def _get_ips(config):

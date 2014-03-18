@@ -49,6 +49,7 @@ class SwiftManager(swiftclient.client.Connection):
             servers.create_servers(config["swift"]["proxy_servers"])
         self.data_servers = \
             servers.create_servers(config["swift"]["data_servers"])
+        self._single_disk_workaround(self.data_servers)
         self._set_mount_check()
         self._backup()
 
@@ -124,7 +125,7 @@ class SwiftManager(swiftclient.client.Connection):
             for server in self.data_servers:
                 server.cmd("rm -f /var/cache/swift/*.recon")
                 for disk in server.disks:
-                    server.safe_umount_disk(disk)
+                    server.umount(disk)
                 server.cmd("rm -fr /srv/node/device*/*")
                 for disk in server.disks:
                     server.cmd("mkfs.ext4 /dev/%s && mount /dev/%s"
@@ -265,6 +266,20 @@ class SwiftManager(swiftclient.client.Connection):
         urls = [line.split('#')[0].split()[-1].strip('" ')
                 for line in output]
         return urls
+
+    @staticmethod
+    def _single_disk_workaround(data_servers):
+        """Use the partitions of the disk instead of the single disk
+
+        If only one disk was given, then the deployment actually partitioned it
+        so that we can have storage devices.
+        TODO: check if the partitions actually exist
+        """
+        for server in data_servers:
+            if len(server.disks) == 1:
+                disk = server.disks[0]
+                partitions = [disk+"1", disk+"2", disk+"3"]
+                server.disks = partitions
 
 
 def file_urls_ok(urls, name, count=3, check_url_count=None, exact=False):
