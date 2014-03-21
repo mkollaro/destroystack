@@ -31,7 +31,7 @@ def setup_module():
 
 
 def teardown_module():
-    common.delete_testfiles()
+    pass
 
 
 class TestSwiftSmallSetup():
