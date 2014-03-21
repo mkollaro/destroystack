@@ -17,10 +17,7 @@
         "user": "admin",
         "password": "123456"
     },
-    "setup_tools": {
-        "setup_script": "packstack_deploy.py",
-        "save_state_script": "openstack_save_state.py",
-        "load_state_script": "openstack_load_state.py",
-        "cleanup_script": ""
+    "management": {
+        "type": "manual"
     }
 }

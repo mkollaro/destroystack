@@ -16,6 +16,7 @@
 # limitations under the License.
 
 import destroystack.tools.swift_manager as swift_manager
+import destroystack.tools.servers_state as servers_state
 import destroystack.tools.common as common
 
 SWIFT = None
@@ -28,6 +29,7 @@ def setup_module():
     global CONFIG
     CONFIG = common.get_config("config.swift_small_setup.json")
     SWIFT = swift_manager.SwiftManager(CONFIG)
+    servers_state.save(CONFIG, 'swift_small_setup')
 
 
 def teardown_module():
@@ -45,6 +47,7 @@ class TestSwiftSmallSetup():
         SWIFT.wait_for_replica_regeneration()
 
     def tearDown(self):
+        servers_state.load(CONFIG, 'swift_small_setup')
         SWIFT.reset()
 
     def test_one_disk_down(self):

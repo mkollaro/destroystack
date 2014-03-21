@@ -42,32 +42,6 @@ def generate_swift_small_setup_config(general_config):
              json.dumps(swift_small_config, indent=4))
 
 
-def _get_commands(tools, options):
-    """Set the module and test setup/teardown commands based on setup_tools."""
-    cmd = dict()
-    cmd["module_setup"] = ""
-    cmd["module_teardown"] = ""
-    cmd["test_setup"] = ""
-    cmd["test_teardown"] = ""
-
-    def get_path(script):
-        return path.join(common.BIN_DIR, script)
-
-    if tools["setup_script"]:
-        cmd["module_setup"] = '%s %s' \
-            % (get_path(tools["setup_script"]), options)
-    if tools["cleanup_script"]:
-        cmd["module_teardown"] = '%s %s' \
-            % (get_path(tools["cleanup_script"]), options)
-    if tools["save_state_script"]:
-        cmd["test_setup"] = '%s %s' \
-            % (get_path(tools["save_state_script"]), options)
-    if tools["load_state_script"]:
-        cmd["test_teardown"] = '%s %s' \
-            % (get_path(tools["load_state_script"]), options)
-    return cmd
-
-
 def _get_swift_small_setup_config(general_config):
     """Create configuration for the Swift small setup.
 
@@ -93,8 +67,6 @@ def _get_swift_small_setup_config(general_config):
 
     k = new_config["swift"]["proxy_servers"][0]
     new_config["keystone"] = _get_keystone(k, general_config["keystone"])
-    tools = general_config["setup_tools"]
-    new_config["commands"] = _get_commands(tools, "--setup=swift_small")
     return new_config
 
 
