@@ -41,6 +41,8 @@ class TestSwiftSmallSetup():
         if len(SWIFT.data_servers) > 1:
             self.server2 = SWIFT.data_servers[1]
         common.populate_swift_with_random_files(SWIFT)
+        # make sure all replicas are distributed before we start killing disks
+        SWIFT.wait_for_replica_regeneration()
 
     def tearDown(self):
         SWIFT.reset()
