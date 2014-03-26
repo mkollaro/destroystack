@@ -1,0 +1,29 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby:shiftwidth=2: tabstop=2: softtabstop=2 :
+
+hosts = {
+  "destroystack1" => "192.168.33.42",
+  "destroystack2" => "192.168.33.43",
+  "destroystack3" => "192.168.33.44"
+}
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+    
+  hosts.each do |name, ip|
+    config.vm.define name do |machine|
+      machine.vm.box = "fedora-18"
+      #machine.vm.box_url = "http://static.stasiak.at/fedora-18-x86-2.box"
+      machine.vm.hostname = name
+      machine.vm.network "private_network", ip: ip
+      machine.ssh.username = "root"
+      machine.ssh.password = "123456"
+      machine.vm.provider "virtualbox" do |v|
+          v.name = name
+          v.customize ["modifyvm", :id, "--memory", 200]
+      end
+    end
+  end
+end
