@@ -1,6 +1,7 @@
 etc/*.json
 etc/packstack.*.answfile
 destroystack/test_files/
+.vagrant/
 
 *.py[cod]
 
