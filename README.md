@@ -1,28 +1,59 @@
 # DestroyStack
 
-This project tries to test the reliability of OpenStack Swift by simulating
+This project tries to test the reliability of OpenStack by simulating
 failures, network problems and generally destroying data and nodes to see if the
-setup survives it. Currently specializes only on Swift, but later it could do
-fail injection tests on other OpenStack projects.
-
+setup survives it. Currently contains only Swift tests, but other components
+are planned.
 
 ## Requirements
 
-Should be run using 3 testing servers, but can be tried out on a single server
-too. The servers should have 6 extra empty disks in total - a good setup should
-be 1 server without extra disks, 2nd server with 3 extra disk, 3rd server with
-another 3 disks. The extra disks should have a file system and no partitions.
-Their size is not important - 1 GB per disk is enough. The servers can be
-virtual machines, there is no need for bare metal, and should be running RHEL
-(Fedora not tested yet) and have a yum repository that contains OpenStack
-packages. Your SSH keys have to be distributed on them. For more info on the
-setups, see the file `TEST_PLAN.md`
+You will either need access to some VMs running in an OpenStack cloud or
+VirtualBox locally. Using VMs is necessary because the machines are being
+snapshotted between the tests to provide test isolation and recover from
+failures (see FAQ). Support for Amazon AWS and libvirt VMs might be added in
+the future.
 
-You may need [packstack](https://github.com/stackforge/packstack) (but you can
-use some other installation tool) and `python-nose` on the machine from which
-you run the tests (do not run them on the test machines).
+If you need bare metal, you can add support for LVM snapshotting, or you can
+use the manual best-effort recovery (see FAQ).
 
-Future requirements will be around 6 testing servers.
+The tests don't tend to be computationally intensive. For now, you should be
+fine if you can spare 2GB of memory for the VMs in total. Certain topologies
+need extra disks for Swift, but their size isn't important - 1GB is enough per
+disk.
+
+I've only tried these with RHEL and Fedora, plus RDO Havana or RHOS-4.0,
+installed by [Packstack](https://github.com/stackforge/packstack). The tests
+themselves don't really care what or how is it deployed. For more info on the
+setups, see the file `TEST_PLAN.md`. The tests use the `python-nose` framework
+and the OpenStack clients, both of which will be installed as dependencies if
+you install this repository with pip.
+
+
+## Demo using VirtualBox
+
+You can try out the demo with Vagrant and VirtualBox (libvirt may be added
+later). While easier to use, it isn't fast - creating the virtual machines will
+take a few minutes, installing OpenStack on them another 15 minutes and the
+tests themselves take a while to run.
+
+    # install the latest version of Vagrant and Virtualbox
+    $ pip install -e --user destroystack/
+    $ cd destroystack/
+    $ vagrant plugin install vagrant-vbox-snapshot
+    $ vagrant up
+    $ ./demo/run
+
+This will boot up 3 Fedora VMs in VirtualBox, deploy the basic topology for
+most DestroyStack tests (others might take more resources than this), create a
+snapshot and run the basic tests that are able to run on this topology. Between
+the test runs, the snapshot will be restored to provide test isolation.
+
+To remove the VMs and extra files, run
+
+  $ cd destroystack/
+  $ vagrant destroy
+  $ rm -r tmp/
+
 
 ## Usage
 
