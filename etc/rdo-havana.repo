@@ -1,0 +1,5 @@
+[rdo-havana]
+name=rdo-havana
+enabled=1
+baseurl=http://repos.fedorapeople.org/repos/openstack/openstack-havana/fedora-19
+gpgcheck=0
