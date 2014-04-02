@@ -17,11 +17,11 @@ Currently contains only Swift tests, but other components are planned.
 You will either need access to some VMs running in an OpenStack cloud or
 VirtualBox locally. Using VMs is necessary because the machines are being
 snapshotted between the tests to provide test isolation and recover from
-failures (see FAQ). Support for Amazon AWS and libvirt VMs might be added in
+failures (see [FAQ](FAQ.md)). Support for Amazon AWS and libvirt VMs might be added in
 the future.
 
 If you need bare metal, you can add support for LVM snapshotting, or you can
-use the manual best-effort recovery (see FAQ).
+use the manual best-effort recovery (see [FAQ](FAQ.md]).
 
 The tests don't tend to be computationally intensive. For now, you should be
 fine if you can spare 2GB of memory for the VMs in total. Certain topologies
@@ -102,7 +102,7 @@ Run the tests:
 
 ## Running the tested system on bare metal
 
-There are multiple possibilties on how to get this working on bare metal.
+There are multiple possibilities on how to get this working on bare metal.
 
 1. add support for LVM snapshots
 2. do manual restoration of files and databases (very error prone)
@@ -116,11 +116,11 @@ be tested, for example a failure of a whole zone, failures of services, network
 problems, etc, which require a complex setup.
 
 If you're thinking about adding a test case, ask yourself this: "Does my test
-**require** root acces to one of the machines?". If no, your test case probably
+**require** root access to one of the machines?". If no, your test case probably
 belongs to [tempest](https://github.com/openstack/tempest).
 
 Snapshotting is done to provide test isolation, since a single failed test
 could fail every other test. I tried reseting back to the original state by
 backing up and restoring files, but it proved tedious and error prone.
 
-For more information, read the `TEST_PLAN.md` file.
+For more information, read the [test plan](TEST_PLAN.md).
