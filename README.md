@@ -30,7 +30,7 @@ disk.
 I've only tried these with RHEL and Fedora, plus RDO Havana or RHOS-4.0,
 installed by [Packstack](https://github.com/stackforge/packstack). The tests
 themselves don't really care what or how is it deployed. For more info on the
-setups, see the file [test plan](TEST_PLAN.md). The tests use the `python-nose`
+setups, see the [test plan](TEST_PLAN.md). The tests use the `python-nose`
 framework and the OpenStack clients, both of which will be installed as
 dependencies if you install this repository with pip.
 
