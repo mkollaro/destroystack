@@ -63,12 +63,14 @@ To remove the VMs and extra files, run
 
 ## Running the tested system inside OpenStack VMs
 
+TODO: write script similar to demo and Heat template, that will do all this
+automagically
+
 If you have a production instance of OpenStack where you can manage VMs, you
 can install OpenStack on them (therefore, run OpenStack inside OpenStack). You
 will give the tests access to the meta OpenStack API and IDs of the VMs, so
 that it can snapshot them between tests. First, create 3 VMs and either use the
-ephemeral flavor or add a cinder disk. (I will hopefully provide a Heat
-template and a script to do all this later).
+ephemeral flavor or add a cinder disk.
 
     $ cd destroystack
     $ cp etc/config.json.openstack.sample etc/config.json
@@ -85,7 +87,7 @@ replica regeneration before failing the tests.
 If you chose to use packstack, install the basic topology with this (more will
 be supported later):
 
-    $ /bin/packstack_deploy.py --setup=swift_small_setup 
+    $ python bin/packstack_deploy.py --setup=swift_small_setup
 
 Run the tests:
 
@@ -100,19 +102,11 @@ There are multiple possibilities on how to get this working on bare metal.
 3. reinstall the system after each test
 4. don't do state restoration and just hope everything works as it should
 
-## General idea
+## About the tests
 
-One of the main reasons for Swift (and OpenStack on the whole) to exist is to
-create a reliable distributed system. There are specific scenarios which should
-be tested, for example a failure of a whole zone, failures of services, network
-problems, etc, which require a complex setup.
+Read the [test plan](TEST_PLAN.md). It's mostly about Swift for now, but more
+will be added later - hopefully some HA tests too.
 
 If you're thinking about adding a test case, ask yourself this: "Does my test
 **require** root access to one of the machines?". If no, your test case
 probably belongs to [Tempest](https://github.com/openstack/tempest).
-
-Snapshotting is done to provide test isolation, since a single failed test
-could fail every other test. I tried reseting back to the original state by
-backing up and restoring files, but it proved tedious and error prone.
-
-For more information, read the [test plan](TEST_PLAN.md).

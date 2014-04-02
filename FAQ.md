@@ -28,7 +28,7 @@ The tests need to be isolated - one failed test (or even one that succeeded,
 but destroyed something important) might cause all other tests to fail. It
 would be possible to restore the changes manually, i.e. backup and copy back
 files, mount disks back, start up services again. However, I found this to be
-very error prone and tedious and while I might keep the manulal reset for some
+very error prone and tedious and while I might keep the manual reset for some
 tests, it won't be generally supported.
 
 It is possible to turn the state reset off completely, but you might get a lot
@@ -79,6 +79,22 @@ There can be multiple ways to run these tests:
 3. lots of resources, little time: run it in parallel - get machines for each
    topology, install each separately, run only the part of the tests that
    require that setup for each
+
+### How do I add a topology?
+
+First, add a description of it into the test plan, together with a description
+of tests you want to run on it and ask others for feedback.
+
+Create an entry in `bin/packstack_deploy.py` for your setup, as well as in
+`destroystack/tools/common.py`, in the list `SUPPORTED_SETUPS`. The tests using
+this topology should be in a new file, named `test_name_of_topology.py`.
+
+### How do I add a test?
+
+First, add it into the test plan and ask others if it's a good idea. If the
+topology it requires already exists, add it into the file for it. Otherwise,
+look at the previous question. Make sure the other tests in that file still
+work, even if it's the first test to be run.
 
 ### Do I have to use Packstack?
 
