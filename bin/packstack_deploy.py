@@ -78,6 +78,8 @@ def deploy_swift_small_setup(server):
     packstack_opt = copy(PACKSTACK_DEFAULT_OPTIONS)
     packstack_opt["CONFIG_SWIFT_INSTALL"] = "y"
     packstack_opt["CONFIG_KEYSTONE_HOST"] = keystone[0]
+    packstack_opt["CONFIG_MYSQL_HOST"] = keystone[0]
+    packstack_opt["CONFIG_QPID_HOST"] = keystone[0]
     packstack_opt["CONFIG_SWIFT_PROXY_HOSTS"] = ",".join(proxy_servers)
     packstack_opt["CONFIG_NOVA_COMPUTE_HOSTS"] = ",".join(proxy_servers)
     packstack_opt["CONFIG_SWIFT_STORAGE_HOSTS"] = ",".join(data_nodes)

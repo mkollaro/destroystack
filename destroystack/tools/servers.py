@@ -102,10 +102,10 @@ class Server(object):
         LOG.info("Formatting disk /dev/%s on %s", disk, self.name)
         assert disk not in self.get_mounted_disks()
         assert disk in self.disks
-        self.cmd("mkfs.ext4 /dev/" + disk)
+        self.cmd("mkfs.ext4 -F /dev/" + disk)
 
     def format_extra_disks(self):
-        cmd = ["(mkfs.ext4 /dev/%s > /dev/null)&" % d for d in self.disks]
+        cmd = ["(mkfs.ext4 -F /dev/%s > /dev/null)&" % d for d in self.disks]
         cmd.append("wait")
         self.cmd(" ".join(cmd))
 
