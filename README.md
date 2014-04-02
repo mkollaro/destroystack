@@ -1,7 +1,7 @@
 # DestroyStack
 
-**WARNING:** Some of the described features are work in progress, please don't try
-to run this yet
+**WARNING:** Some of the described features are work in progress, please don't
+try to run this yet
 
 **WARNING:** Do not run these on a production system! I will destroy everything
 you love.
@@ -17,8 +17,8 @@ Currently contains only Swift tests, but other components are planned.
 You will either need access to some VMs running in an OpenStack cloud or
 VirtualBox locally. Using VMs is necessary because the machines are being
 snapshotted between the tests to provide test isolation and recover from
-failures (see [FAQ](FAQ.md)). Support for Amazon AWS and libvirt VMs might be added in
-the future.
+failures (see [FAQ](FAQ.md)). Support for Amazon AWS and libvirt VMs might be
+added in the future.
 
 If you need bare metal, you can add support for LVM snapshotting, or you can
 use the manual best-effort recovery (see [FAQ](FAQ.md]).
@@ -106,7 +106,8 @@ There are multiple possibilities on how to get this working on bare metal.
 
 1. add support for LVM snapshots
 2. do manual restoration of files and databases (very error prone)
-3. don't do state restoration and just hope everything works as it should
+3. reinstall the system after each test
+4. don't do state restoration and just hope everything works as it should
 
 ## General idea
 
@@ -116,8 +117,8 @@ be tested, for example a failure of a whole zone, failures of services, network
 problems, etc, which require a complex setup.
 
 If you're thinking about adding a test case, ask yourself this: "Does my test
-**require** root access to one of the machines?". If no, your test case probably
-belongs to [tempest](https://github.com/openstack/tempest).
+**require** root access to one of the machines?". If no, your test case
+probably belongs to [Tempest](https://github.com/openstack/tempest).
 
 Snapshotting is done to provide test isolation, since a single failed test
 could fail every other test. I tried reseting back to the original state by

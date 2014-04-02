@@ -1,4 +1,37 @@
-# Test Plan for Fail Injection Testing of OpenStack Swift
+# Test Plan
+
+## Nova
+
++–––––––––––+    +––––––––––––––+
+| Controller+––+–+  Compute #1  |
++–––––––––––+  | |              |
+               | +––––––––––––––+
+               |
+               | +––––––––––––––+
+               +–+  Compute #2  |
+                 |              |
+                 +––––––––––––––+
+Assumptions:
+* no VMs should be running on either of them in the beginning
+
+
+Tests:
+* kill compute node service
+    - stop some of the basic nova services on one of the compute nodes
+    - create some VMs
+    - check if VMs were scheduled to be created on the other compute node and
+      work
+
+* (idea) kill connection to the user
+    - assuming there is a private and public network, shut down the public
+      interface of one of the compute nodes
+    - the node is now accessible from the controller, but not from the user -
+      what should the nova scheduler do? Is it expected to notice this?
+    - in this scenario, the user would get a VM but wouldn't be able to connect
+      to it and remove the VM - but if Nova doesn't recognize it,
+      it will continue scheduling all his VMs onto this compute node
+
+## Swift
 
 General assumptions:
 * there should be a time limit (~1 minute) for waiting until replica
@@ -6,7 +39,7 @@ General assumptions:
 * replica count is 3 unless stated otherwise
 * Swift populated with some random objects and containers
 
-## Small Swift Setup
+### Small Swift Setup
 
             +-------------------+
             |   Proxy Server    |
@@ -132,7 +165,7 @@ Tests:
     - check if the replicas are always consistent (all 3 of them have the same
       content at all times)
 
-## Medium Swift Setup
+### Medium Swift Setup
 
     +-----------------+          +-----------+
     | Proxy Server #1 +-----+----+ Keystone  |
@@ -188,7 +221,7 @@ Tests:
 TODO: failures during rebalancing
 
 
-## Large Swift Setup
+### Large Swift Setup
 
      +----------+                                        +----------+
      | Users    |                                        |    Users |
