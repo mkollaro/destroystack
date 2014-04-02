@@ -1,9 +1,16 @@
 # DestroyStack
 
-This project tries to test the reliability of OpenStack by simulating
-failures, network problems and generally destroying data and nodes to see if the
-setup survives it. Currently contains only Swift tests, but other components
-are planned.
+**WARNING:** Some of the described features are work in progress, please don't try
+to run this yet
+
+**WARNING:** Do not run these on a production system! I will destroy everything
+you love.
+
+This project tries to test the reliability of OpenStack by simulating failures,
+network problems and generally destroying data and nodes to see if the setup
+survives it. The basic idea is to inject some fault, see if everything still
+works as expected and restore the state back to what it was before the fault.
+Currently contains only Swift tests, but other components are planned.
 
 ## Requirements
 
@@ -55,27 +62,29 @@ To remove the VMs and extra files, run
   $ rm -r tmp/
 
 
-## Usage
+## Running the tested system inside OpenStack VMs
+
+If you have a production instance of OpenStack where you can manage VMs, you
+can install OpenStack on them (therefore, run OpenStack inside OpenStack). You
+will give the tests access to the meta OpenStack API and IDs of the VMs, so
+that it can snapshot them between tests. First, create 3 VMs and either use the
+ephemeral flavor or add a cinder disk. (I will hopefully provide a Heat
+template and a script to do all this later).
 
     $ cd destroystack
-    $ cp etc/config.json.sample etc/config.json
+    $ cp etc/config.json.openstack.sample etc/config.json
 
-Replace `SERVERx.COM` with the host names of your servers in the `config.json`
-file. Change the disk names in case they are called differently than
-`/dev/{vdb,vdc,vdd}`. Don't put your main disk in here! They will all be
-formatted. You can use a single server for the basic tests, but you will need at
-least 6 disks on it. Just add or remove server entries depending on how many you
+Set the VM IDs and links in the config file. Change the disk names in case they
+are called differently than `/dev/{vdb,vdc,vdd}`. Don't put your main disk in
+here! They will all be
+formatted. Just add or remove server entries depending on how many you
 have. The services password is what will be set in the answer files for keystone
 and other things, you don't need to change it. The timeout is in seconds and
 tells the tests how long to wait for stuff like replica regeneration before
 failing the tests.
 
-    $ python destroystack/tools/generate_answerfiles.py
+    $ python bin/generate_answerfiles.py
 
-If you want to use something different for Swift installation, look into the
-answer files in `etc/` and make sure you will use the exact same topology as
-written on top of the file. Even using more servers than DestroyStack chose to
-use may cause false positives.
 
 If you chose to use packstack, install Swift like this:
 
@@ -91,6 +100,13 @@ Run the tests:
 
     $ nosetests
 
+## Running the tested system on bare metal
+
+There are multiple possibilties on how to get this working on bare metal.
+
+1. add support for LVM snapshots
+2. do manual restoration of files and databases (very error prone)
+3. don't do state restoration and just hope everything works as it should
 
 ## General idea
 
@@ -99,16 +115,12 @@ create a reliable distributed system. There are specific scenarios which should
 be tested, for example a failure of a whole zone, failures of services, network
 problems, etc, which require a complex setup.
 
-If you're thinking about adding a test case, ask yourself this: "Does it really
-require more than a single machine setup?". If no, your test case probably
-belongs to [tempest](https://github.com/openstack/tempest) or into the tests
-that are part of Swift's source code.
+If you're thinking about adding a test case, ask yourself this: "Does my test
+**require** root acces to one of the machines?". If no, your test case probably
+belongs to [tempest](https://github.com/openstack/tempest).
 
-The Swift deployment gets reset after each test case - right now it is done by
-making a backup of the `*.ring.gz` and `*.builder` files (among others) in the
-beginning and then restoring them after each test case and restarting the
-services. This could also be done with packstack, but it is slow (which could
-perhaps be fixed). Another option would be to to use snapshots of the test
-machines.
+Snapshotting is done to provide test isolation, since a single failed test
+could fail every other test. I tried reseting back to the original state by
+backing up and restoring files, but it proved tedious and error prone.
 
 For more information, read the `TEST_PLAN.md` file.
