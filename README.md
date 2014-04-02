@@ -1,7 +1,6 @@
 # DestroyStack
 
-**WARNING:** Some of the described features are work in progress, please don't
-try to run this yet
+**WARNING:** Some of the described features are work in progress
 
 **WARNING:** Do not run these on a production system! I will destroy everything
 you love.
@@ -21,7 +20,7 @@ failures (see [FAQ](FAQ.md)). Support for Amazon AWS and libvirt VMs might be
 added in the future.
 
 If you need bare metal, you can add support for LVM snapshotting, or you can
-use the manual best-effort recovery (see [FAQ](FAQ.md]).
+use the manual best-effort recovery (see [FAQ](FAQ.md)).
 
 The tests don't tend to be computationally intensive. For now, you should be
 fine if you can spare 2GB of memory for the VMs in total. Certain topologies
@@ -31,9 +30,9 @@ disk.
 I've only tried these with RHEL and Fedora, plus RDO Havana or RHOS-4.0,
 installed by [Packstack](https://github.com/stackforge/packstack). The tests
 themselves don't really care what or how is it deployed. For more info on the
-setups, see the file `TEST_PLAN.md`. The tests use the `python-nose` framework
-and the OpenStack clients, both of which will be installed as dependencies if
-you install this repository with pip.
+setups, see the file [test plan](TEST_PLAN.md). The tests use the `python-nose`
+framework and the OpenStack clients, both of which will be installed as
+dependencies if you install this repository with pip.
 
 
 ## Demo using VirtualBox
@@ -76,15 +75,12 @@ template and a script to do all this later).
 
 Set the VM IDs and links in the config file. Change the disk names in case they
 are called differently than `/dev/{vdb,vdc,vdd}`. Don't put your main disk in
-here! They will all be
-formatted. Just add or remove server entries depending on how many you
-have. The services password is what will be set in the answer files for keystone
-and other things, you don't need to change it. The timeout is in seconds and
-tells the tests how long to wait for stuff like replica regeneration before
-failing the tests.
+here! They will all be formatted. The services password is what will be set in
+the answer files for keystone and other things, you don't need to change it.
+The timeout is in seconds and tells the tests how long to wait for stuff like
+replica regeneration before failing the tests.
 
-    $ python bin/generate_answerfiles.py
-
+    $ python bin/generate_config_files.py
 
 If you chose to use packstack, install the basic topology with this (more will
 be supported later):
