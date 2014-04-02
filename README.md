@@ -86,15 +86,10 @@ failing the tests.
     $ python bin/generate_answerfiles.py
 
 
-If you chose to use packstack, install Swift like this:
+If you chose to use packstack, install the basic topology with this (more will
+be supported later):
 
-    $ packstack --answer-file=etc/packstack.swiftsmallsetup.answfile
-
-TODO: There will be multiple setups and packstack (or other tool, set in a
-configuration file) will be probably run in the module or package setup
-function, not manually. There should still remain the possibility to do it
-manually - install Swift any way you wish, run a subset of tests that uses that
-setup, reinstall Swift, run another subset of tests...
+    $ /bin/packstack_deploy.py --setup=swift_small_setup 
 
 Run the tests:
 

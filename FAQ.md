@@ -79,3 +79,9 @@ There can be multiple ways to run these tests:
 3. lots of resources, little time: run it in parallel - get machines for each
    topology, install each separately, run only the part of the tests that
    require that setup for each
+
+### Do I have to use Packstack?
+
+No, you can deploy it however you like, the setup just needs to be in sync with
+the generated configuration files. Please be so kind and commit a script that
+would deploy using an alternative deployment tool, if you have one.
