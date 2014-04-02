@@ -57,9 +57,9 @@ the test runs, the snapshot will be restored to provide test isolation.
 
 To remove the VMs and extra files, run
 
-  $ cd destroystack/
-  $ vagrant destroy
-  $ rm -r tmp/
+    $ cd destroystack/
+    $ vagrant destroy
+    $ rm -r tmp/
 
 
 ## Running the tested system inside OpenStack VMs
