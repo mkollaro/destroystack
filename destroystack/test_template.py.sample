@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2013 Red Hat, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#           http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""This a template for a new test set that explains how to create new tests.
+
+First, copy this file and rename it to `test_<my_setup_name>.py`, for example
+`test_big_ha_neutron_setup.py`. This is beacause each test module is meant for
+a different topology - if the topology you need is already in some module, you
+can just edit that module. Replace all the occurences of `<my_setup_name>` in
+this file into your actual setup name.
+
+You should edit `bin/generate_config_files.py` and add your setup there, so it
+would generate the file `bin/config.<my_setup_name>.json`. Ideally, you should
+also provide some script or a link to a script that can deploy this setup, so
+that other people can use it.
+"""
+
+import destroystack.tools.servers as server_tools
+import destroystack.tools.common as common
+
+CONFIG = None
+servers = None
+
+
+def setup_module():
+    global CONFIG
+    global servers
+    # each setup, i.e. topology, has its own configuration file which tells it
+    # what services are running on which machines and how to access them
+    CONFIG = common.get_config("config.<my_setup_name>.json")
+    servers = server_tools.ServerManager(CONFIG)
+    # if enabled in the configuration, create a snapshot of the machines, or
+    # try backing up the files if the management is set to manual (not
+    # recommended, it's only best-effort)
+    servers.save_state(tag='<my_setup_name>_clean')
+
+
+def teardown_module():
+    pass
+
+
+class TestMySetupName():
+    def setUp(self):
+        # stuff that will be done for each test
+        # you can select any server from the server manager, in this case it
+        # selects a random compute node
+        self.server = servers.get(role='compute')
+        # command exacuted in the shell as root
+        self.server.ssh('touch some_file')
+
+    def tearDown(self):
+        # restore the snapshot with that tag (make sure you use the same tag as
+        # when saving the state) if snapshotting is enabled in the
+        # configuration, or restore the backed up files if the management is
+        # set to manual. This will make sure that if one test destroys the
+        # setup, another test can run with the same environment.
+        servers.load_state(tag='<my_setup_name>_clean')
+
+    def test_reboot(self):
+        self.server.reboot()
+        # you can run any command on any of the servers as root
+        output = self.server.ssh('ls')
+        assert 'some_file' in output
