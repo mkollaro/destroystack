@@ -27,7 +27,12 @@ from functools import wraps
 import errno
 import os
 import signal
+import logging
+import time
+import datetime
 from nose.tools import TimeExpired
+
+LOG = logging.getLogger(__name__)
 
 
 def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
@@ -47,3 +52,30 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
         return wraps(func)(wrapper)
 
     return decorator
+
+
+def wait_for(label, condition, obj_getter, timeout=120, period=1):
+    """Wait for condition to be true until timeout.
+
+    :param label: used for logging
+    :param condition: function that takes the object from obj_getter and
+        returns True or False
+    :param obj_getter: function that returns the object on which the condition
+        is tested
+    :param timeout: how many seconds to wait until a TimeoutError
+    :param period: how many seconds to wait between testing the condition
+    :raises: TimeoutError when timeout_sec is exceeded
+             and condition isn't true
+    """
+    obj = obj_getter()
+    timeout_ = datetime.timedelta(seconds=timeout)
+    start = datetime.datetime.now()
+    LOG.info('%s - START' % label)
+    while not condition(obj):
+        if (datetime.datetime.now() - start) > timeout_:
+            raise TimeExpired("waiting for '%s' expired after %d seconds"
+                              % (label, timeout))
+        time.sleep(period)
+        obj = obj_getter()
+    LOG.info('%s - DONE' % label)
+    return obj

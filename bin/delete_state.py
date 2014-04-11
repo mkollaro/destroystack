@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 
 def main():
     general_config = common.get_config()
-    servers_state.load(general_config)
+    servers_state.delete(general_config)
 
 
 if __name__ == '__main__':

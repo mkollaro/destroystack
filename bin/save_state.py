@@ -10,9 +10,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+import destroystack.tools.servers_state as servers_state
+import destroystack.tools.common as common
+
+
+logging.basicConfig(level=logging.INFO)
+
 
 def main():
-    pass
+    general_config = common.get_config()
+    servers_state.save(general_config)
 
 
 if __name__ == '__main__':
