@@ -15,7 +15,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+"""Handle the state restoration of server.
+
+Since destroystack injects failures into the tested system, there has to be
+some isolation between tests, otherwise a failure caused by one test might
+cause an unwanted failure in the next one.
+
+This module can save and restore the state by various methods.  The type of
+state restoration is decided in the configuration, "management.type", which can
+be:
+    * manual
+    * none
+    * openstack
+    * vagrant (not implemented)
+    * vagrant-libvirt (not implemented)
+    * lvm (not implemented)
+
+The basic one is of type 'manual' - it just backs up some files and restores
+them after the tests, plus starts up the services that were turned off and
+similar. It's just a best effort restoration - it takes a lot of work to get it
+working properly and is not supported for everything. Try not to rely on it if
+possible.
+
+The better way is to use snapshots, although this requires that the servers are
+VMs. Right now, only snapshots of OpenStack VMs is supported, but VirtualBox
+(trough vagrant) and libvirt might get supported in the future. For bare metal,
+using the LVM snapshots might get supported.
+"""
+
 import logging
+import time
 import itertools
 from novaclient import client
 from destroystack.tools.timeout import wait_for
@@ -24,18 +54,60 @@ LOG = logging.getLogger(__name__)
 
 
 def save(config, tag=''):
+    """Create a snapshot of all the servers
+
+    Depending on what is in the configuration in "management.type":
+        * manual - Just create some backup of the files and maybe databases.
+            Unsupported and not recommended.
+        * none - Do nothing
+        * openstack - Create a snapshot of all the servers in the configuration
+
+    If it's being created, the name of the snapshots (if created) will be
+    "config.management.snapshot_prefix" + name of the VM + tag, where the
+    prefix is "destroystack-snapshot" by default. The VMs have to have unique
+    names (at least among each other) and snapshots/images with that name
+    cannot already exist.
+
+    :param tag: will be appended to the name of the snapshots
+    """
     _choose_action(config, 'save', tag)
 
 
 def load(config, tag=''):
+    """Restore all the servers from their snapshots.
+
+    For more information, see the function ``save``.
+
+    Depending on what is in the configuration in "management.type":
+        * manual - Restore backups, mount disks that got umounted, start up
+            services again. Unsupported, might not work - it's just a best
+            effort.
+        * none - Do nothing
+        * openstack - Rebuild the VMs with the snapshot images, which are going
+            to be found by the name as described in the ``save`` function.
+    """
     _choose_action(config, 'load', tag)
 
 
 def delete(config, tag=''):
+    """Delete all the snapshots of the servers.
+
+    For more information, see the function ``save``.
+
+    Depending on what is in the configuration in "management.type":
+        * manual - Do nothing (removing the backup files is not implemented)
+        * none - Do nothing
+        * openstack - Remove all the snapshots with the names as described in
+            the ``save`` function
+    """
     _choose_action(config, 'delete', tag)
 
 
 def _choose_action(config, action, tag):
+    """Choose which function to use, based on "management.type" in config.
+
+    :param action: save, load or delete
+    """
     if 'management' not in config or 'type' not in config['management']:
         raise Exception("The management type has to be in config")
     assert action in ['save', 'load', 'delete']
@@ -61,6 +133,8 @@ def _choose_action(config, action, tag):
 
 
 def create_openstack_snapshots(config, tag):
+    """Create snapshots of OpenStack VMs and wait until they are active.
+    """
     nova = _get_nova_client(config)
     vms = _find_openstack_vms(nova, config)
 
@@ -72,15 +146,18 @@ def create_openstack_snapshots(config, tag):
         LOG.info("Creating snapshot '%s'" % snapshot_name)
         s = vm.create_image(snapshot_name)
         snapshots.append(s)
+        time.sleep(5)
 
     for snapshot_id in snapshots:
         snapshot = nova.images.get(snapshot_id)
         wait_for("Waiting until snapshot '%s' is active" % snapshot.name,
                  lambda x: x.status == 'ACTIVE',
-                 lambda: nova.images.get(snapshot_id))
+                 lambda: nova.images.get(snapshot_id),
+                 timeout=180)
 
 
 def load_openstack_snapshots(config, tag):
+    """Restore snapshots of servers - find them by name"""
     nova = _get_nova_client(config)
     vms = _find_openstack_vms(nova, config)
     for vm_id in vms:
@@ -96,9 +173,11 @@ def load_openstack_snapshots(config, tag):
         vm = nova.servers.get(vm_id)
         wait_for("Waiting until VM '%s' is in active state" % vm.name,
                  lambda x: x.status == 'ACTIVE',
-                 lambda: nova.servers.get(vm_id))
-        # TODO wait until ssh works
-        # create new ssh connections
+                 lambda: nova.servers.get(vm_id),
+                 timeout=180)
+    # create new ssh connections
+    # TODO wait until ssh works, not just an arbitrary sleep
+    time.sleep(30)
 
 
 def delete_openstack_snapshots(config, tag):
