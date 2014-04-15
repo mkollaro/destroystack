@@ -29,6 +29,8 @@ BIN_DIR = os.path.join(PROJ_DIR, "bin")
 TESTFILE_DIR = os.path.join(PROJ_DIR, "test_files")
 
 SUPPORTED_SETUPS = ["swift_small_setup"]
+# file in the ./etc/ direcotry
+MAIN_CONFIG_FILE = os.environ.get("MAIN_CONFIG_FILE", "config.json")
 
 LOG = logging.getLogger(__name__)
 
@@ -37,7 +39,7 @@ class ConfigException(Exception):
     pass
 
 
-def get_config(filename="config.json"):
+def get_config(filename=MAIN_CONFIG_FILE):
     """Load dict from a JSON configuration file in CONF_DIR."""
     with open(os.path.join(CONFIG_DIR, filename)) as f:
         config = json.load(f)
