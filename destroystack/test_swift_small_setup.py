@@ -40,6 +40,8 @@ def teardown_module():
 
 class TestSwiftSmallSetup():
     def setUp(self):
+        global SWIFT
+        SWIFT = swift_manager.SwiftManager(SETUP_CONFIG)
         self.server1 = SWIFT.data_servers[0]
         self.server2 = self.server1
         if len(SWIFT.data_servers) > 1:
