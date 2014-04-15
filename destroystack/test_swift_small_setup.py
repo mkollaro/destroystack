@@ -17,19 +17,21 @@
 
 import destroystack.tools.swift_manager as swift_manager
 import destroystack.tools.servers_state as servers_state
+import destroystack.tools.servers as servers
 import destroystack.tools.common as common
 
+SETUP_NAME = "swift_small_setup"
+SETUP_CONFIG = None
 SWIFT = None
-CONFIG = None
 REPLICA_COUNT = 3
 
 
 def setup_module():
     global SWIFT
-    global CONFIG
-    CONFIG = common.get_config("config.swift_small_setup.json")
-    SWIFT = swift_manager.SwiftManager(CONFIG)
-    servers_state.save(CONFIG, 'swift_small_setup')
+    global SETUP_CONFIG
+    SETUP_CONFIG = common.get_config("config.%s.json" % SETUP_NAME)
+    SWIFT = swift_manager.SwiftManager(SETUP_CONFIG)
+    servers_state.save(SETUP_NAME)
 
 
 def teardown_module():
@@ -47,8 +49,10 @@ class TestSwiftSmallSetup():
         SWIFT.wait_for_replica_regeneration()
 
     def tearDown(self):
-        servers_state.load(CONFIG, 'swift_small_setup')
-        SWIFT.reset()
+        servers_state.load(SETUP_NAME)
+        # this is a workaround - the server restoration is not guaranteed to
+        # restore the extra disks too, so we re-format them
+        servers.prepare_extra_disks(SETUP_CONFIG['swift']['data_servers'])
 
     def test_one_disk_down(self):
         self.server1.kill_disk()

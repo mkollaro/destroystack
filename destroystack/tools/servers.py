@@ -20,6 +20,7 @@
 import paramiko
 import logging
 import subprocess
+from socket import gethostbyname
 
 import destroystack.tools.common as common
 
@@ -209,3 +210,24 @@ def _log_output(stdout, stderr):
         LOG.info("SSH command stdout:\n" + " ".join(stdout).strip())
     if stderr:
         LOG.error("SSH command stderr:\n" + " ".join(stderr).strip())
+
+
+def prepare_extra_disks(data_servers_config):
+    """Format and partition disks if neccessary.
+
+    Return a list in form ["ip.address/vda", "ip.address.2/vda"]
+    """
+    description = list()
+    for config in data_servers_config:
+        server = Server(**config)
+        if len(server.disks) == 1:
+            LOG.info("Only one extra disk on %s, create partitions on it and"
+                     " use those instead" % config["hostname"])
+            partition_single_extra_disk(server)
+        LOG.info("Formatting extra disks on %s" % config["hostname"])
+        server.format_extra_disks()
+        # get description of devices for packstack answerfile
+        ip = gethostbyname(server.hostname)
+        devices = ['/'.join([ip, disk]) for disk in server.disks]
+        description.extend(devices)
+    return description
