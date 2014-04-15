@@ -12,14 +12,12 @@
 
 import logging
 import destroystack.tools.servers_state as servers_state
-import destroystack.tools.common as common
 
 logging.basicConfig(level=logging.INFO)
 
 
 def main():
-    general_config = common.get_config()
-    servers_state.delete(general_config)
+    servers_state.delete()
 
 
 if __name__ == '__main__':
