@@ -31,7 +31,10 @@ def setup_module():
     global SETUP_CONFIG
     SETUP_CONFIG = common.get_config("config.%s.json" % SETUP_NAME)
     SWIFT = swift_manager.SwiftManager(SETUP_CONFIG)
-    servers_state.save(SETUP_NAME)
+    servers_state.load(SETUP_NAME)
+    servers.prepare_extra_disks(SETUP_CONFIG['swift']['data_servers'])
+    SWIFT.mount_disks()
+    SWIFT.reset()
 
 
 def teardown_module():
@@ -55,8 +58,8 @@ class TestSwiftSmallSetup():
         # this is a workaround - the server restoration is not guaranteed to
         # restore the extra disks too, so we re-format them
         servers.prepare_extra_disks(SETUP_CONFIG['swift']['data_servers'])
+        SWIFT.mount_disks()
         SWIFT.reset()
-        # TODO mount
 
     def test_one_disk_down(self):
         self.server1.kill_disk()
