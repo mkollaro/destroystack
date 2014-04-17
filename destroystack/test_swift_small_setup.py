@@ -55,6 +55,8 @@ class TestSwiftSmallSetup():
         # this is a workaround - the server restoration is not guaranteed to
         # restore the extra disks too, so we re-format them
         servers.prepare_extra_disks(SETUP_CONFIG['swift']['data_servers'])
+        SWIFT.reset()
+        # TODO mount
 
     def test_one_disk_down(self):
         self.server1.kill_disk()
