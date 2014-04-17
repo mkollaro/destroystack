@@ -65,7 +65,7 @@ class SwiftManager(swiftclient.client.Connection):
 
         :param check_nodes: Look only at first x number of nodes. Since usually
             the first 'count' nodes are primary nodes, if you set
-            'check_nodes=count', no handoff nodes will be checked out. If
+        wif   'check_nodes=count', no handoff nodes will be checked out. If
             set to None, try all of them.
         :param exact: also fail if there are more than 'count' replicas
         :returns: True iff there are 'count' replicas of everything
@@ -164,18 +164,18 @@ class SwiftManager(swiftclient.client.Connection):
             self._stop_services()
             for server in self.proxy_servers:
                 server.cmd("""
-                    rm -fr /var/tmp/swift-backup/etc &&
-                    mkdir -p /var/tmp/swift-backup/etc &&
+                    rm -fr /root/swift-backup/etc &&
+                    mkdir -p /root/swift-backup/etc &&
                     cd /etc/swift &&
-                    cp -rp *.builder *.ring.gz /var/tmp/swift-backup/etc/""")
+                    cp -rp *.builder *.ring.gz /root/swift-backup/etc/""")
             for server in self.data_servers:
-                server.cmd("rm -fr /var/tmp/swift-backup/{devices,cache}")
-                server.cmd("mkdir -p /var/tmp/swift-backup/{devices,cache}")
+                server.cmd("rm -fr /root/swift-backup/{devices,cache}")
+                server.cmd("mkdir -p /root/swift-backup/{devices,cache}")
                 server.cmd(
-                    "cp -p /var/cache/swift/* /var/tmp/swift-backup/cache/",
+                    "cp -p /var/cache/swift/* /root/swift-backup/cache/",
                     ignore_failure=True)
                 for device in server.get_mount_points().values():
-                    server.cmd("cp -rp %s /var/tmp/swift-backup/devices/"
+                    server.cmd("cp -rp %s /root/swift-backup/devices/"
                                % device)
         finally:
             self._start_services()
@@ -191,15 +191,15 @@ class SwiftManager(swiftclient.client.Connection):
         try:
             self._stop_services()
             for server in self.proxy_servers:
-                server.cmd("cp -rp /var/tmp/swift-backup/etc/* /etc/swift/ ")
+                server.cmd("cp -rp /root/swift-backup/etc/* /etc/swift/ ")
             for server in self.data_servers:
                 for device in server.get_mount_points().values():
                     server.cmd(
-                        "cp -rp /var/tmp/swift-backup/devices/* /srv/node/")
+                        "cp -rp /root/swift-backup/devices/* /srv/node/")
                 server.cmd("chown -R swift:swift /srv/node/*")
                 server.cmd("restorecon -R /srv/*")
                 server.cmd(
-                    "cp -rp /var/tmp/swift-backup/cache/* /var/cache/swift/",
+                    "cp -rp /root/swift-backup/cache/* /var/cache/swift/",
                     ignore_failure=True)
         finally:
             self._start_services()
