@@ -140,10 +140,10 @@ def create_openstack_snapshots(tag):
     """Create snapshots of OpenStack VMs and wait until they are active.
     """
     nova = _get_nova_client()
-    vms = _find_openstack_vms(nova)
+    vms, ssh_servers = _find_openstack_vms(nova)
 
     snapshots = list()
-    for vm_id in vms:
+    for vm_id, ssh in zip(vms, ssh_servers):
         vm = nova.servers.get(vm_id)
         snapshot_name = _get_snapshot_name(vm.name, tag)
         s = _find_snapshot(nova, snapshot_name)
@@ -155,7 +155,7 @@ def create_openstack_snapshots(tag):
             # let things settle a bit
             time.sleep(3)
             # sync the file system first
-            vm.ssh("sync")
+            ssh.cmd("sync")
             LOG.info("Creating snapshot '%s'" % snapshot_name)
             s = vm.create_image(snapshot_name)
             snapshots.append(s)
@@ -171,7 +171,7 @@ def create_openstack_snapshots(tag):
 def load_openstack_snapshots(tag):
     """Restore snapshots of servers - find them by name"""
     nova = _get_nova_client()
-    vms = _find_openstack_vms(nova)
+    vms, _ = _find_openstack_vms(nova)
     for vm_id in vms:
         vm = nova.servers.get(vm_id)
         snapshot_name = _get_snapshot_name(vm.name, tag)
@@ -194,7 +194,7 @@ def load_openstack_snapshots(tag):
 
 def delete_openstack_snapshots(tag):
     nova = _get_nova_client()
-    vms = _find_openstack_vms(nova)
+    vms, _ = _find_openstack_vms(nova)
     for vm_id in vms:
         vm = nova.servers.get(vm_id)
         snapshot_name = _get_snapshot_name(vm.name, tag)
@@ -230,6 +230,7 @@ def _get_snapshot_name(vm_name, tag):
 
 def _find_openstack_vms(novaclient):
     vms = list()
+    ssh_servers = list()
     for server in CONFIG['servers']:
         if 'id' in server:
             vm = novaclient.servers.get(server['id'])
@@ -238,10 +239,10 @@ def _find_openstack_vms(novaclient):
 
         if vm is None:
             raise Exception("Couldn't find server:\n %s" % server)
-        ssh_access = SshServer(**server)
-        vm.ssh = ssh_access
+        ssh = SshServer(**server)
         vms.append(vm)
-    return vms
+        ssh_servers.append(ssh)
+    return vms, ssh_servers
 
 
 def _find_openstack_vm_by_ip(novaclient, ip, vm_id=None):
