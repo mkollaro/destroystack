@@ -46,7 +46,7 @@ class SwiftManager(swiftclient.client.Connection):
             auth_version='2',
             tenant_name=keystone["user"])
         self._config = config
-        self._get_servers(config)
+        self._get_servers()
         self._set_mount_check()
         self._backup()
 
