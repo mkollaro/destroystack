@@ -95,7 +95,7 @@ class SwiftManager(swiftclient.client.Connection):
     def mount_disks(self):
         for server in self.data_servers:
             for disk in server.disks:
-                server.cmd("mount /dev/%s")
+                server.cmd("mount /dev/%s" % disk)
 
     @timeout(TIMEOUT, "The replicas were not consistent within timeout.")
     def wait_for_replica_regeneration(self, count=3, check_nodes=None,
