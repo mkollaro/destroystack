@@ -59,38 +59,10 @@ CONFIG = common.get_config()
 
 
 def save(tag=''):
-    """Create a snapshot of all the servers
-
-    Depending on what is in the configuration in "management.type":
-        * manual - Just create some backup of the files and maybe databases.
-            Unsupported and not recommended.
-        * none - Do nothing
-        * openstack - Create a snapshot of all the servers in the configuration
-
-    If it's being created, the name of the snapshots (if created) will be
-    "config.management.snapshot_prefix" + name of the VM + tag, where the
-    prefix is "destroystack-snapshot" by default. The VMs have to have unique
-    names (at least among each other) and snapshots/images with that name
-    cannot already exist.
-
-    :param tag: will be appended to the name of the snapshots
-    """
     _choose_action('save', tag)
 
 
 def load(tag=''):
-    """Restore all the servers from their snapshots.
-
-    For more information, see the function ``save``.
-
-    Depending on what is in the configuration in "management.type":
-        * manual - Restore backups, mount disks that got umounted, start up
-            services again. Unsupported, might not work - it's just a best
-            effort.
-        * none - Do nothing
-        * openstack - Rebuild the VMs with the snapshot images, which are going
-            to be found by the name as described in the ``save`` function.
-    """
     _choose_action('load', tag)
 
 
@@ -109,10 +81,6 @@ def delete(tag=''):
 
 
 def _choose_action(action, tag):
-    """Choose which function to use, based on "management.type" in config.
-
-    :param action: save, load or delete
-    """
     if 'management' not in CONFIG or 'type' not in CONFIG['management']:
         raise Exception("The management type has to be in config")
     assert action in ['save', 'load', 'delete']
