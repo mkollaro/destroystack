@@ -179,7 +179,7 @@ def load_openstack_snapshots(tag):
                  timeout=SNAPSHOT_TIMEOUT)
     # create new ssh connections
     # TODO wait until ssh works, not just an arbitrary sleep
-    time.sleep(30)
+    time.sleep(3*60)
 
 
 def delete_openstack_snapshots(tag):
