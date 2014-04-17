@@ -120,11 +120,11 @@ def _choose_action(action, tag):
     type = CONFIG['management']['type']
     if type == 'openstack':
         if action == 'save':
-            create_openstack_snapshots(tag)
+            _create_openstack_snapshots(tag)
         elif action == 'load':
-            load_openstack_snapshots(tag)
+            _load_openstack_snapshots(tag)
         else:
-            delete_openstack_snapshots(tag)
+            _delete_openstack_snapshots(tag)
     elif type == 'vagrant':
         raise NotImplementedError("vagrant snapshots are not implemented yet")
     elif type == 'manual':
@@ -136,7 +136,7 @@ def _choose_action(action, tag):
                         "supported" % type)
 
 
-def create_openstack_snapshots(tag):
+def _create_openstack_snapshots(tag):
     """Create snapshots of OpenStack VMs and wait until they are active.
     """
     nova = _get_nova_client()
@@ -168,7 +168,7 @@ def create_openstack_snapshots(tag):
                  timeout=SNAPSHOT_TIMEOUT)
 
 
-def load_openstack_snapshots(tag):
+def _load_openstack_snapshots(tag):
     """Restore snapshots of servers - find them by name"""
     nova = _get_nova_client()
     vms, _ = _find_openstack_vms(nova)
@@ -192,7 +192,7 @@ def load_openstack_snapshots(tag):
     time.sleep(3*60)
 
 
-def delete_openstack_snapshots(tag):
+def _delete_openstack_snapshots(tag):
     nova = _get_nova_client()
     vms, _ = _find_openstack_vms(nova)
     for vm_id in vms:
@@ -229,6 +229,11 @@ def _get_snapshot_name(vm_name, tag):
 
 
 def _find_openstack_vms(novaclient):
+    """Search for VMs by their ID or IP address
+
+    :returns: list of VMs and list of Server objects (which have the ssh
+        connection to them), in the same order
+    """
     vms = list()
     ssh_servers = list()
     for server in CONFIG['servers']:
@@ -238,14 +243,22 @@ def _find_openstack_vms(novaclient):
             vm = _find_openstack_vm_by_ip(novaclient, server['hostname'])
 
         if vm is None:
-            raise Exception("Couldn't find server:\n %s" % server)
+            raise exceptions.NotFound("Couldn't find server:\n %s" % server)
         ssh = SshServer(**server)
         vms.append(vm)
         ssh_servers.append(ssh)
     return vms, ssh_servers
 
 
-def _find_openstack_vm_by_ip(novaclient, ip, vm_id=None):
+def _find_openstack_vm_by_ip(novaclient, ip):
+    """Search trough all VMs and find one that has that IP on any network
+
+    Look at all the networks for each VM and see if one of them has that IP
+    address.
+
+    :raises novaclient.exceptions.NoUniqueMatch: if two VMs have the same IP
+    :returns: the VM if found, None if not
+    """
     all_vms = novaclient.servers.list()
     found = False
     result = None
@@ -256,11 +269,11 @@ def _find_openstack_vm_by_ip(novaclient, ip, vm_id=None):
         all_ips = list(itertools.chain.from_iterable(ip_list))
         if ip in all_ips:
             if found is True:
-                raise Exception("Found two VMs with the IP '%s'. This means it"
-                                " is possible for more VMs to have the same IP"
-                                " in your setup. To uniquely identify VMs,"
-                                " please provide the 'id' field in the"
-                                " configuration for each server")
+                msg = ("Found two VMs with the IP '%s'. This means it is"
+                       " possible for more VMs to have the same IP in your"
+                       " setup. To uniquely identify VMs, please provide the"
+                       " 'id' field in the configuration for each server")
+                raise exceptions.NoUniqueMatch(msg)
             found = True
             result = vm
     return result
