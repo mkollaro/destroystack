@@ -48,7 +48,9 @@ import logging
 import time
 import itertools
 from novaclient import client
+from novaclient import exceptions
 from destroystack.tools.timeout import wait_for
+from destroystack.tools.servers import Server as SshServer
 import destroystack.tools.common as common
 
 LOG = logging.getLogger(__name__)
@@ -144,11 +146,19 @@ def create_openstack_snapshots(tag):
     for vm_id in vms:
         vm = nova.servers.get(vm_id)
         snapshot_name = _get_snapshot_name(vm.name, tag)
-        # maybe sync the filesystem first
-        LOG.info("Creating snapshot '%s'" % snapshot_name)
-        s = vm.create_image(snapshot_name)
-        snapshots.append(s)
-        time.sleep(1)  # I was having issues on one server until I added this
+        s = _find_snapshot(nova, snapshot_name)
+        if s:
+            LOG.warning("Snapshot '%s' already exist, re-using it"
+                        % snapshot_name)
+            snapshots.append(s)
+        else:
+            # let things settle a bit
+            time.sleep(3)
+            # sync the file system first
+            vm.ssh("sync")
+            LOG.info("Creating snapshot '%s'" % snapshot_name)
+            s = vm.create_image(snapshot_name)
+            snapshots.append(s)
 
     for snapshot_id in snapshots:
         snapshot = nova.images.get(snapshot_id)
@@ -193,6 +203,14 @@ def delete_openstack_snapshots(tag):
         s.delete()
 
 
+def _find_snapshot(novaclient, snapshot_name):
+    try:
+        snapshot = novaclient.images.find(name=snapshot_name)
+        return snapshot
+    except exceptions.NotFound:
+        return None
+
+
 def _get_nova_client():
     manage = CONFIG['management']
     nova = client.Client('1.1', manage['user'], manage['password'],
@@ -220,6 +238,8 @@ def _find_openstack_vms(novaclient):
 
         if vm is None:
             raise Exception("Couldn't find server:\n %s" % server)
+        ssh_access = SshServer(**server)
+        vm.ssh = ssh_access
         vms.append(vm)
     return vms
 
