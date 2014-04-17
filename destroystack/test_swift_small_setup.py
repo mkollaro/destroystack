@@ -41,7 +41,6 @@ def teardown_module():
 class TestSwiftSmallSetup():
     def setUp(self):
         global SWIFT
-        SWIFT = swift_manager.SwiftManager(SETUP_CONFIG)
         self.server1 = SWIFT.data_servers[0]
         self.server2 = self.server1
         if len(SWIFT.data_servers) > 1:
@@ -52,7 +51,7 @@ class TestSwiftSmallSetup():
 
     def tearDown(self):
         servers_state.load(SETUP_NAME)
-        SWIFT = swift_manager.SwiftManager(SETUP_CONFIG)
+        SWIFT._get_servers()
         # this is a workaround - the server restoration is not guaranteed to
         # restore the extra disks too, so we re-format them
         servers.prepare_extra_disks(SETUP_CONFIG['swift']['data_servers'])

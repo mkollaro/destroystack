@@ -45,13 +45,17 @@ class SwiftManager(swiftclient.client.Connection):
             keystone["password"],
             auth_version='2',
             tenant_name=keystone["user"])
-        self.proxy_servers = \
-            servers.create_servers(config["swift"]["proxy_servers"])
-        self.data_servers = \
-            servers.create_servers(config["swift"]["data_servers"])
-        self._single_disk_workaround(self.data_servers)
+        self._config = config
+        self._get_servers(config)
         self._set_mount_check()
         self._backup()
+
+    def _get_servers(self):
+        self.proxy_servers = \
+            servers.create_servers(self._config["swift"]["proxy_servers"])
+        self.data_servers = \
+            servers.create_servers(self._config["swift"]["data_servers"])
+        self._single_disk_workaround(self.data_servers)
 
     def replicas_are_ok(self, count=3, check_nodes=None, exact=False):
         """ Check if all objects and containers have enough replicas.
