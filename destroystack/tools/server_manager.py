@@ -20,40 +20,69 @@ from destroystack.tools import state_restoration
 
 # Possible roles that a server can have, depending what services are installed
 # on it. It can have more than one role.
-ROLES = ['keystone', 'swift_proxy', 'swift_data', 'controller', 'compute',
-         'glance', 'cinder', 'neutron']
+ROLES = set(['keystone', 'swift_proxy', 'swift_data', 'controller', 'compute',
+             'glance', 'cinder', 'neutron'])
 
 MANAGEMENT_TYPES = ['none', 'manual', 'openstack']
 
 LOG = logging.getLogger(__name__)
 
 
+class Server():
+    def __init__(self, roles):
+        self.roles = roles
+
+
 class ServerManager(object):
 
     def __init__(self, config, connect=True):
+        """
+        :param config: path to configuration file, should be the one which was
+            generated from the main one and contains roles for each server
+        :param connect: if True, will create ssh connections to all the servers
+        """
         self._config = config
+        if connect:
+            self.connect()
+        server1 = Server(['compute'])
+        server2 = Server(['swift_data'])
+        server3 = Server(['swift_proxy', 'cinder'])
+        self._servers = [server1, server2, server3]
 
-    def get(self, role=None, roles=None):
-        """Get a server by its parameters.
+    def servers(self, role=None, roles=None):
+        """Generator that gets a server by its parameters.
 
         If no parameters are given, it will just return any of them.
         :param role: get a server that has this role, choose from `ROLES`
         :param roles: get a server that has all of these roles, see param
             `role`
-        :param connect: if True, will create ssh connections to all the servers
         """
         if role:
             assert role in ROLES
-        # you can use only one of them
-        assert bool(role) != bool(roles)
+            assert not roles  # cannot use both
+        if roles:
+            roles = set(roles)
+            assert roles.issubset(ROLES)
 
-    def get_all(self, role=None, roles=None):
-        """Get a list of servers that have the given parameters.
+        for server in self._servers:
+            if not role and not roles:
+                # no conditions, return any
+                yield server
+            elif role in server.roles \
+                    or (roles and roles.issubset(server.roles)):
+                yield server
 
-        Same as `ServerManager.get`, but gets you a list of all the servers
-        that fulfill the conditions, not just one.
+    def get(self, role=None, roles=None):
+        """Get the first server that matches the parameters.
+
+        For more info, look at the `ServerManager.servers() generator - it uses
+        the same parameters.
+        :returns: the server in question or None
         """
-        pass
+        try:
+            return self.servers(role, roles).next()
+        except StopIteration:
+            return None
 
     def save_state(self, tag=''):
         """Create a snapshot of all the servers
