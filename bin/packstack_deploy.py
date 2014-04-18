@@ -10,13 +10,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from socket import gethostbyname
 from copy import copy
 import sys
 import logging
 
 import destroystack.tools.common as common
-import destroystack.tools.servers as servers
+import destroystack.tools.servers as server_tools
+from destroystack.tools.server_manager import ServerManager
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
@@ -62,31 +62,34 @@ def main():
         sys.exit(1)
 
 
-def deploy_swift_small_setup(server):
+def deploy_swift_small_setup(main_server):
     """Install keystone+swift proxy on one server, data servers on other.
 
     Also formats the extra disks provided to the data servers.
     """
-    answerfile = "packstack.swift_small_setup.answer"
-    config = common.get_config("config.swift_small_setup.json")
-    keystone = _get_ips([config["keystone"]["server"]])
-    proxy_servers = _get_ips(config["swift"]["proxy_servers"])
+    setup_name = 'swift_small_setup'
+    answerfile = "packstack." + setup_name + ".answer"
+    config = common.get_config("config." + setup_name + ".json")
+    manager = ServerManager(config)
 
-    data_nodes = servers.prepare_extra_disks(config["swift"]["data_servers"])
+    keystone = manager.get(role='keystone')
+    proxy_servers_ip = [s.ip for s in manager.servers(role='swift_proxy')]
+    data_servers = list(manager.servers(role='swift_data'))
+    data_nodes = server_tools.prepare_extra_disks(data_servers)
 
     packstack_opt = copy(PACKSTACK_DEFAULT_OPTIONS)
     packstack_opt["CONFIG_SWIFT_INSTALL"] = "y"
-    packstack_opt["CONFIG_KEYSTONE_HOST"] = keystone[0]
-    packstack_opt["CONFIG_MYSQL_HOST"] = keystone[0]
-    packstack_opt["CONFIG_QPID_HOST"] = keystone[0]
-    packstack_opt["CONFIG_SWIFT_PROXY_HOSTS"] = ",".join(proxy_servers)
-    packstack_opt["CONFIG_NOVA_COMPUTE_HOSTS"] = ",".join(proxy_servers)
+    packstack_opt["CONFIG_KEYSTONE_HOST"] = keystone.ip
+    packstack_opt["CONFIG_MYSQL_HOST"] = keystone.ip
+    packstack_opt["CONFIG_QPID_HOST"] = keystone.ip
+    packstack_opt["CONFIG_SWIFT_PROXY_HOSTS"] = ",".join(proxy_servers_ip)
+    packstack_opt["CONFIG_NOVA_COMPUTE_HOSTS"] = ",".join(proxy_servers_ip)
     packstack_opt["CONFIG_SWIFT_STORAGE_HOSTS"] = ",".join(data_nodes)
-    _create_packstack_answerfile(server, packstack_opt, answerfile)
+    _create_packstack_answerfile(main_server, packstack_opt, answerfile)
 
     LOG.info("Running packstack, this may take a while")
-    server.cmd("packstack --answer-file=%s" % answerfile, log_output=True)
-    _configure_keystone(server, config["keystone"])
+    main_server.cmd("packstack --answer-file=%s" % answerfile, log_output=True)
+    _configure_keystone(main_server, config["keystone"])
 
 
 def install_packages(server, packages):
@@ -94,26 +97,26 @@ def install_packages(server, packages):
     server.cmd('yum install -y %s' % packages, log_output=True)
 
 
-def _configure_keystone(server, config):
+def _configure_keystone(main_server, config):
     # TODO create the user if it's not admin
     user = config["user"]
     password = config["password"]
-    server.cmd("source ~/keystonerc_admin && "
-               "keystone user-password-update --pass '%s' %s"
-               % (password, user))
+    main_server.cmd("source ~/keystonerc_admin && "
+                    "keystone user-password-update --pass '%s' %s"
+                    % (password, user))
     if user == "admin":
-        server.cmd("echo 'export OS_PASSWORD=%s' >> ~/keystonerc_admin"
-                   % password)
+        main_server.cmd("echo 'export OS_PASSWORD=%s' >> ~/keystonerc_admin"
+                        % password)
     else:
         # TODO create keystonerc_username
         pass
 
 
-def _create_packstack_answerfile(server, answers, filename):
-    server.cmd("packstack --gen-answer-file=%s" % filename)
+def _create_packstack_answerfile(main_server, answers, filename):
+    main_server.cmd("packstack --gen-answer-file=%s" % filename)
     for question, answer in answers.iteritems():
-        server.cmd("openstack-config --set %s general %s %s"
-                   % (filename, question, answer))
+        main_server.cmd("openstack-config --set %s general %s %s"
+                        % (filename, question, answer))
 
 
 def _get_options():
@@ -135,7 +138,7 @@ def _get_server(options):
     """
     server = None
     if options.execute_from == "localhost":
-        server = servers.LocalServer()
+        server = server_tools.LocalServer()
     else:
         if '@' not in options.execute_from:
             print OPT_ERROR
@@ -147,13 +150,9 @@ def _get_server(options):
         if not user or not host:
             print OPT_ERROR
             sys.exit(1)
-        server = servers.Server(host, user, password)
+        server = server_tools.Server(host, user, password)
     server.cmd("uname -a", log_output=True)
     return server
-
-
-def _get_ips(config):
-    return [gethostbyname(s["hostname"]) for s in config]
 
 
 if __name__ == '__main__':

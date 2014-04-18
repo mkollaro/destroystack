@@ -17,6 +17,7 @@
 
 import logging
 from destroystack.tools import state_restoration
+import destroystack.tools.servers as server_tools
 
 # Possible roles that a server can have, depending what services are installed
 # on it. It can have more than one role.
@@ -28,26 +29,15 @@ MANAGEMENT_TYPES = ['none', 'manual', 'openstack']
 LOG = logging.getLogger(__name__)
 
 
-class Server():
-    def __init__(self, roles):
-        self.roles = roles
-
-
 class ServerManager(object):
 
-    def __init__(self, config, connect=True):
+    def __init__(self, config):
         """
         :param config: path to configuration file, should be the one which was
             generated from the main one and contains roles for each server
-        :param connect: if True, will create ssh connections to all the servers
         """
         self._config = config
-        if connect:
-            self.connect()
-        server1 = Server(['compute'])
-        server2 = Server(['swift_data'])
-        server3 = Server(['swift_proxy', 'cinder'])
-        self._servers = [server1, server2, server3]
+        self._servers = server_tools.create_servers(config['servers'])
 
     def servers(self, role=None, roles=None):
         """Generator that gets a server by its parameters.

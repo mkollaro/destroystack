@@ -58,10 +58,16 @@ class Server(object):
     Maintains an SSH connection to the server, keeps track of disks and their
     mount points.
     """
-    def __init__(self, hostname,
-                 username="root", password=None, extra_disks=None, **kwargs):
+    def __init__(self, hostname=None, ip=None, username="root", password=None,
+                 roles=None, extra_disks=None, **kwargs):
+        assert hostname or ip, "either hostname or IP address required"
         self.hostname = hostname
+        if not ip:
+            self.ip = gethostbyname(self.hostname)
+        else:
+            self.ip = ip
         self.name = common.get_name_from_hostname(hostname)
+        self.roles = roles or set()
         self.disks = extra_disks
         if "root_password" in kwargs and not password:
             username = "root"
@@ -71,6 +77,9 @@ class Server(object):
         self.cmd.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.cmd.load_system_host_keys()
         self.cmd.connect(hostname, username=username, password=password)
+
+    def __str__(self):
+        return self.name
 
     def kill_disk(self, disk=None):
         """ Force umount one of the mounted disks.
@@ -142,14 +151,27 @@ class Server(object):
         """
         return list(self.get_mount_points().keys())
 
+    def _decide_on_name(self):
+        if not self.hostname:
+            return self.ip
+
+        # if it's just a short name, use that
+        if '.' not in self.hostname:
+            return self.hostname
+        # if it's a long hostname, use first part
+        name = self.hostname.split('.')[0]
+        if common.represents_int(name):
+            # not really a hostname, just IP - which didn't get specified in
+            # the 'ip' field as it should have been
+            name = self.hostname
+        return name
+
 
 class SSH(paramiko.SSHClient):
     """Wrapper around paramiko for better error handling and logging."""
 
     def __init__(self, hostname):
         super(SSH, self).__init__()
-        self.hostname = hostname
-        self.name = common.get_name_from_hostname(hostname)
 
     def __call__(self, command, ignore_failure=False,
                  log_cmd=True, log_output=False, log_error=True):
@@ -212,19 +234,18 @@ def _log_output(stdout, stderr):
         LOG.error("SSH command stderr:\n" + " ".join(stderr).strip())
 
 
-def prepare_extra_disks(data_servers_config):
+def prepare_extra_disks(servers):
     """Format and partition disks if neccessary.
 
     Return a list in form ["ip.address/vda", "ip.address.2/vda"]
     """
     description = list()
-    for config in data_servers_config:
-        server = Server(**config)
+    for server in servers:
         if len(server.disks) == 1:
             LOG.info("Only one extra disk on %s, create partitions on it and"
-                     " use those instead" % config["hostname"])
+                     " use those instead" % server)
             partition_single_extra_disk(server)
-        LOG.info("Formatting extra disks on %s" % config["hostname"])
+        LOG.info("Formatting extra disks on %s" % server)
         server.format_extra_disks()
         # get description of devices for packstack answerfile
         ip = gethostbyname(server.hostname)

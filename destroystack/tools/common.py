@@ -119,14 +119,3 @@ def represents_int(s):
         return True
     except ValueError:
         return False
-
-
-def get_name_from_hostname(hostname):
-    if '.' not in hostname:
-        return hostname
-
-    name = hostname.split('.')[0]
-    if represents_int(name):
-        # not really a hostname, just IP
-        name = hostname
-    return name
