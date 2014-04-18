@@ -21,8 +21,7 @@ from destroystack.tools.server_manager import ServerManager
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
-# packages that will be checked for or installed on either localhost or server
-# set in --execute_from
+# packages that will be checked for on local host
 REQUIRED_PACKAGES = ['openstack-packstack', 'openstack-utils']
 
 PACKSTACK_DEFAULT_OPTIONS = {
@@ -45,13 +44,12 @@ PACKSTACK_DEFAULT_OPTIONS = {
     "CONFIG_NOVA_NETWORK_PRIVIF":       "lo",
 }
 
-OPT_ERROR = "Please use the format 'user:password@server' in  --execute_from"
-
 
 def main():
-    options = _get_options()
-    server = _get_server(options)
+    option_parser = common.get_option_parser()
+    options, _ = option_parser.parse_args()
 
+    server = server_tools.LocalServer()
     install_packages(server, REQUIRED_PACKAGES)
 
     # TODO: cycle trough common.SUPPORTED_SETUPS and get the func by name
@@ -117,42 +115,6 @@ def _create_packstack_answerfile(main_server, answers, filename):
     for question, answer in answers.iteritems():
         main_server.cmd("openstack-config --set %s general %s %s"
                         % (filename, question, answer))
-
-
-def _get_options():
-    parser = common.get_option_parser()
-    parser.add_option("-e", "--execute-from", dest="execute_from",
-                      help="URI of server from which to run packstack, "
-                           "in the format 'user:password@server'.",
-                      default="localhost")
-    options, _ = parser.parse_args()
-    return options
-
-
-def _get_server(options):
-    """Get the Server or LocalServer from which to execute Packstack.
-
-    If execute-from is set to localhost, return LocalServer. If it is set to a
-    URI in the format 'user:pass@server', it will create an SSH connection to
-    it.
-    """
-    server = None
-    if options.execute_from == "localhost":
-        server = server_tools.LocalServer()
-    else:
-        if '@' not in options.execute_from:
-            print OPT_ERROR
-            sys.exit(1)
-        user, host = options.execute_from.split('@', 1)
-        password = None
-        if ':' in user:
-            user, password = user.split(':', 1)
-        if not user or not host:
-            print OPT_ERROR
-            sys.exit(1)
-        server = server_tools.Server(host, user, password)
-    server.cmd("uname -a", log_output=True)
-    return server
 
 
 if __name__ == '__main__':
