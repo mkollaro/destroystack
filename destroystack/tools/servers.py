@@ -174,6 +174,7 @@ class SSH(paramiko.SSHClient):
 
     def __init__(self, name):
         super(SSH, self).__init__()
+        self.name = name
 
     def __call__(self, command, ignore_failure=False,
                  log_cmd=True, log_output=False, log_error=True):
