@@ -141,7 +141,7 @@ class Server(object):
         mount_points = dict()
         for disk in self.disks:
             stdout, _ = self.cmd(
-                "mount|grep /dev/%s| awk '{print $3}'" % disk)
+                "mount|grep '/dev/%s '| awk '{print $3}'" % disk)
             if stdout:
                 mount_points[disk] = stdout[0].strip()
         return mount_points
@@ -172,7 +172,6 @@ class SSH(paramiko.SSHClient):
 
     def __init__(self, name):
         super(SSH, self).__init__()
-        self.name = name
 
     def __call__(self, command, ignore_failure=False,
                  log_cmd=True, log_output=False, log_error=True):
