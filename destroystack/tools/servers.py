@@ -38,7 +38,8 @@ def create_servers(configs):
 class ServerException(Exception):
     """ Raised when there was a problem executing an SSH command on a server.
     """
-    pass
+    def __init__(self, host, **kwargs):
+        super(ServerException, self).__init__(**kwargs)
 
 
 class LocalServer():
@@ -198,7 +199,7 @@ class SSH(paramiko.SSHClient):
         if not ignore_failure and stdout.channel.recv_exit_status() != 0:
             if log_error and not log_output:
                 _log_output(out, err)
-            raise ServerException(err)
+            raise ServerException(self.name, err)
         return out, err
 
 
