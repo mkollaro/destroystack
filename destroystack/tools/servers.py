@@ -38,8 +38,9 @@ def create_servers(configs):
 class ServerException(Exception):
     """ Raised when there was a problem executing an SSH command on a server.
     """
-    def __init__(self, host, **kwargs):
-        super(ServerException, self).__init__(**kwargs)
+    def __init__(self, hostname, message, **kwargs):
+        new_msg = "[%s] %s" % (hostname, message)
+        super(ServerException, self).__init__(new_msg, **kwargs)
 
 
 class LocalServer():
