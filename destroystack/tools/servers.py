@@ -66,7 +66,7 @@ class Server(object):
             self.ip = gethostbyname(self.hostname)
         else:
             self.ip = ip
-        self.name = common.get_name_from_hostname(hostname)
+        self.name = self._decide_on_name()
         self.roles = roles or set()
         self.disks = extra_disks
         if "root_password" in kwargs and not password:
