@@ -73,7 +73,7 @@ class Server(object):
             username = "root"
             password = kwargs["root_password"]
 
-        self.cmd = SSH(hostname)
+        self.cmd = SSH(self.name)
         self.cmd.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.cmd.load_system_host_keys()
         self.cmd.connect(hostname, username=username, password=password)
@@ -170,8 +170,9 @@ class Server(object):
 class SSH(paramiko.SSHClient):
     """Wrapper around paramiko for better error handling and logging."""
 
-    def __init__(self, hostname):
+    def __init__(self, name):
         super(SSH, self).__init__()
+        self.name = name
 
     def __call__(self, command, ignore_failure=False,
                  log_cmd=True, log_output=False, log_error=True):
