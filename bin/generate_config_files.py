@@ -84,10 +84,13 @@ def _get_swift_small_setup_config(general_config):
             proxy_server_count += 1
             server['roles'].append('swift_proxy')
             server['roles'].append('keystone')
+            keystone_host = server.get('hostname', server['ip'])
+            keystone_url = "http://" + keystone_host + ":5000/v2.0/"
     if data_server_count < 2:
         LOG.error("The swift small setup requires at least 2 servers with an"
                   " extra disk or partition")
         return None
+    new_config['keystone']['auth_url'] = keystone_url
     return new_config
 
 
