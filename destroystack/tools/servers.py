@@ -222,9 +222,17 @@ def partition_single_extra_disk(server):
         '/dev/{0}4 : start=        0, size=        0, Id= 0'
     ]).format(disk)
     server.umount(disk)
-    LOG.info('Creating 3 partitions on %s:/dev/%s' % (server.name, disk))
-    server.cmd('echo -e \'%s\' > partition_table' % partition_table)
-    server.cmd('sfdisk /dev/%s < partition_table' % disk)
+    devices = server.cmd('ls /dev/%s*' % disk).split()
+    if len(devices) == 4:  # one main disk device, 3 partitions
+        LOG.info("Partitions of the disk '/dev/%s' already exist" % disk)
+    elif 1 < len(devices) < 4:
+        raise ServerException(server.name, "Partitions of '/dev/%s' exist, but"
+                              " there is an incorrect number of them"
+                              " - there should be 3 of them" % disk)
+    else:
+        LOG.info('Creating 3 partitions on %s:/dev/%s' % (server.name, disk))
+        server.cmd('echo -e \'%s\' > partition_table' % partition_table)
+        server.cmd('sfdisk /dev/%s < partition_table' % disk)
     partitions = [disk+'1', disk+'2', disk+'3']
     server.disks = partitions
 
