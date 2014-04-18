@@ -15,11 +15,16 @@
 To use this, do `$ cp etc/config.json.sample etc/config.json` and edit the
 contents to fit your requirements. You should be fine by just editing the
 'servers' section. For more info, see the README file.
+
+The generated files are named 'config.<setup_name>.json' and they are simply
+copies of the original 'config.json', but have the 'roles' item for each
+server, specifying what services will be running on it.
 """
 
 import json
 import logging
 from os import path
+from copy import deepcopy
 
 import destroystack.tools.common as common
 
@@ -29,98 +34,65 @@ LOG = logging.getLogger(__name__)
 
 def main():
     general_config = common.get_config()
-    generate_swift_small_setup_config(general_config)
+    generate_config_files(general_config)
 
 
-def generate_swift_small_setup_config(general_config):
-    """Write the config file"""
-    filename = "config.swift_small_setup.json"
-    swift_small_config = _get_swift_small_setup_config(general_config)
-    with open(path.join(common.CONFIG_DIR, filename), 'w') as f:
-        json.dump(swift_small_config, f, indent=4)
-    LOG.info("Config file for the Swift small setup:\n%s",
-             json.dumps(swift_small_config, indent=4))
+def generate_config_files(general_config):
+    """Write the config file
+
+    TODO: make this general for all setups, call the correct function by
+        searching the namespace
+    """
+    setup_name = "swift_small_setup"
+    new_config = _get_swift_small_setup_config(general_config)
+    file_path = path.join(common.CONFIG_DIR, "config." + setup_name + ".json")
+    if new_config:
+        with open(file_path, 'w') as f:
+            json.dump(new_config, f, indent=4)
+        LOG.info("Creating config file '%s'" % file_path)
+    else:
+        LOG.info("Skipping creation of config file for '%s'" % setup_name)
 
 
 def _get_swift_small_setup_config(general_config):
     """Create configuration for the Swift small setup.
 
-    Decide which servers to use for what depending on available servers.  Use 1
-    proxy + 2 dataservers if 3 servers are available, improvise otherwise.
+    It requires that there are at least 3 servers and at least 2 of them have
+    to have an extra disk (see the 'extra_disks' field). Ideally, they should
+    have 3 disks (or 3 partitions), but if you only have one extra disk each,
+    it will get formatted it into 3 partitions (not here, later).
 
     :param conf: Config object
-    :returns: (proxy_list, datacenter_list)
+    :returns: copy of the general_config, but with added 'roles' for each
+        server, or None if the general configuration doesn't fulfill the
+        requirements
     """
-    servers = general_config["servers"]
-    counts = (0, 1, 2)  # combined, proxies, datacenters
-    msg = "Swift small setup tests. You may experience problems, \
-           3 servers are recommended."
-    if len(servers) == 2:
-        LOG.warn("Using only two servers for %s" % msg)
-        counts = (1, 0, 1)
-    elif len(servers) == 1:
-        LOG.warn("Using only one server for %s" % msg)
-        counts = (1, 0, 0)
+    new_config = deepcopy(general_config)
+    if len(new_config['servers']) < 3:
+        LOG.error("The swift small setup requires at least 3 servers")
+        return None
+    data_server_count = 0
+    proxy_server_count = 0
+    for server in new_config['servers']:
+        if 'roles' not in server:
+            server['roles'] = []
 
-    new_config = dict()
-    new_config["swift"] = _get_swift_servers(servers, *counts)
-
-    k = new_config["swift"]["proxy_servers"][0]
-    new_config["keystone"] = _get_keystone(k, general_config["keystone"])
+        if _has_extra_disks(server) and data_server_count < 2:
+            data_server_count += 1
+            server['roles'].append('swift_data')
+        elif proxy_server_count == 0:
+            proxy_server_count += 1
+            server['roles'].append('swift_proxy')
+            server['roles'].append('keystone')
+    if data_server_count < 2:
+        LOG.error("The swift small setup requires at least 2 servers with an"
+                  " extra disk or partition")
+        return None
     return new_config
 
 
-def _get_keystone(server, keystone_conf):
-    """
-    :param server: a dict with the keystone server info, like
-        {"hostname":"abc.com", "root_password":"123"}
-    :param keystone_conf: a dict with keystone settings
-        {"user":"admin", "password":"123456"}
-    """
-    result = dict()
-    url = "http://" + server["hostname"] + ":5000/v2.0/"
-    result["server"] = server
-    result["auth_url"] = url
-    result["user"] = keystone_conf["user"]
-    result["password"] = keystone_conf["password"]
-    return result
-
-
-def _get_swift_servers(servers,
-                       combined_count=0, proxy_count=0, dataserver_count=0):
-    """Decide which servers to use as proxies, dataservers or both.
-
-    It will assign the servers with disk first to the dataservers, then to the
-    combined servers (which are to be used as both proxy and dataserver) and
-    then the rest of them as proxies.
-
-    :param servers: list of servers. A server should have an "extra_disks" item
-        to be used as a data center (or combined)
-    :raises ConfigException: if there are less than
-        proxy_count+dataserver_count+combined_count servers available in the
-        config or if you want more dataservers then there are servers with
-        disks
-    :returns: (proxy_list, datacenter_list) where the combined servers will be
-        included in both
-    """
-    if len(servers) < proxy_count + dataserver_count + combined_count:
-        raise common.ConfigException("Not enough servers in config file")
-    got_disks = []
-    no_disks = []
-    for server in servers:
-        if "extra_disks" in server and len(server["extra_disks"]) > 0:
-            got_disks.append(server)
-        else:
-            no_disks.append(server)
-    if dataserver_count + combined_count > len(got_disks):
-        raise common.ConfigException("Not enough servers with extra disks")
-
-    dataservers = [got_disks.pop() for _ in range(dataserver_count)]
-    combined = [got_disks.pop() for _ in range(combined_count)]
-    rest = got_disks + no_disks
-    proxies = [rest.pop() for _ in range(proxy_count)]
-    return {"proxy_servers": combined + proxies,
-            "data_servers": combined + dataservers}
+def _has_extra_disks(server):
+    return ('extra_disks' in server and len(server['extra_disks']) > 0)
 
 
 if __name__ == '__main__':
