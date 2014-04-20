@@ -90,11 +90,14 @@ def delete_snapshots(tag=''):
     nova = _get_nova_client()
     vms, _ = _find_vms(nova)
     for vm_id in vms:
-        vm = nova.servers.get(vm_id)
-        snapshot_name = _get_snapshot_name(vm.name, tag)
-        s = nova.images.find(name=snapshot_name)
-        LOG.info("Deleting snapshot '%s'" % s.name)
-        s.delete()
+        try:
+            vm = nova.servers.get(vm_id)
+            snapshot_name = _get_snapshot_name(vm.name, tag)
+            s = nova.images.find(name=snapshot_name)
+            LOG.info("Deleting snapshot '%s'", s.name)
+            s.delete()
+        except exceptions.NotFound:
+            LOG.warning("Could not find snapshot '%s'", s.name)
 
 
 def _find_snapshot(novaclient, snapshot_name):
