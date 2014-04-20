@@ -112,7 +112,7 @@ def _configure_keystone(main_server, config):
 
 
 def _create_packstack_answerfile(main_server, answers, filename):
-    if main_server.cmd("[ -f %s]" % filename).exit_code != 0:
+    if main_server.file_exists(filename):
         LOG.info("Reusing existing packstack answer file")
         main_server.cmd("packstack --gen-answer-file=%s" % filename)
     for question, answer in answers.iteritems():

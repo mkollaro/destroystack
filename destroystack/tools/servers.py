@@ -167,6 +167,13 @@ class Server(object):
             name = self.hostname
         return name
 
+    def file_exists(self, filename):
+        check_existing = "[ -f %s ]" % filename
+        if self.cmd(check_existing, ignore_failures=True).exit_code == 0:
+            return True
+        else:
+            return False
+
 
 class SSH(paramiko.SSHClient):
     """Wrapper around paramiko for better error handling and logging."""
