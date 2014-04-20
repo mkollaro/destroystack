@@ -16,22 +16,23 @@
 # limitations under the License.
 
 import destroystack.tools.swift_manager as swift_manager
-import destroystack.tools.servers_state as servers_state
+from destroystack.tools.server_manager import ServerManager
 import destroystack.tools.servers as servers
 import destroystack.tools.common as common
 
 SETUP_NAME = "swift_small_setup"
-SETUP_CONFIG = None
 SWIFT = None
+manager = None
 REPLICA_COUNT = 3
 
 
 def setup_module():
     global SWIFT
-    global SETUP_CONFIG
-    SETUP_CONFIG = common.get_config("config.%s.json" % SETUP_NAME)
-    SWIFT = swift_manager.SwiftManager(SETUP_CONFIG)
-    servers_state.save(SETUP_NAME)
+    global manager
+    setup_config = common.get_config("config.%s.json" % SETUP_NAME)
+    manager = ServerManager(setup_config)
+    SWIFT = swift_manager.SwiftManager(setup_config)
+    manager.save()
 
 
 def teardown_module():
@@ -40,21 +41,22 @@ def teardown_module():
 
 class TestSwiftSmallSetup():
     def setUp(self):
-        global SWIFT
+        self.data_servers = manager.servers(role='swift_data')
+        if len(self.data_servers) < 2:
+            raise Exception("You need at least 2 Swfit data servers for the"
+                            " '%s' tests" % SETUP_NAME)
         self.server1 = SWIFT.data_servers[0]
         self.server2 = self.server1
-        if len(SWIFT.data_servers) > 1:
-            self.server2 = SWIFT.data_servers[1]
         common.populate_swift_with_random_files(SWIFT)
         # make sure all replicas are distributed before we start killing disks
         SWIFT.wait_for_replica_regeneration()
 
     def tearDown(self):
-        servers_state.load(SETUP_NAME)
-        SWIFT._get_servers()
+        manager.load()
+        manager.connect()  # should be done by load()
         # this is a workaround - the server restoration is not guaranteed to
         # restore the extra disks too, so we re-format them
-        servers.prepare_extra_disks(SETUP_CONFIG['swift']['data_servers'])
+        # servers.prepare_extra_disks(setup_config['swift']['data_servers'])
         SWIFT.mount_disks()
         #SWIFT.reset()
 
