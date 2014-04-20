@@ -15,6 +15,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Manual backup and restoration of servers.
+
+Not recommended - only best effort. It may cause false negatives - the state
+might not get completely restored and cause tests to fail. If possible, use the
+metaopenstack snapshotting.
+
+
+Currently only supports Swift. You need to either use a different state
+restoration method or add support for the component you need if Swift is not
+what you are testing.
+
+It will try to back up all the files (and in the future databases) that keep
+the state of the servers. After some fail injection test runs and probably
+causes damage to something, this can be restored and services restarted, thus
+bringing the machine into the same state as it was before, and another test can
+run.
+"""
+
 import logging
 import destroystack.tools.servers as servers
 
@@ -24,9 +42,7 @@ LOG = logging.getLogger(__name__)
 def create_backup(server_manager):
     """Create backup of configuration and files that keep state.
 
-    Currently only supports Swift. You need to either use a different state
-    restoration method or add support for the component you need if Swift is
-    not what you are testing.
+    Only Swift is supported so far.
 
     Symmetric function to 'restore_backup'. Backs up all .builder and .ring.gz
     on the proxy servers, disk content of Swift disks and .recon files on the
@@ -60,9 +76,7 @@ def create_backup(server_manager):
 def restore_backup(server_manager):
     """Try to remove changes made to the system since running `create_backup`.
 
-    Currently only supports Swift. You need to either use a different state
-    restoration method or add support for the component you need if Swift is
-    not what you are testing.
+    Only Swift is supported so far.
 
     Symmetric function to `create_backup`. Cleans and re-mounts disks on
     data servers. Restores rings and builder files, restarts swift services.
