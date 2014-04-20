@@ -31,7 +31,7 @@ def setup_module():
     global swift
     setup_config = common.get_config("config.%s.json" % SETUP_NAME)
     manager = ServerManager(setup_config)
-    manager.save()
+    manager.save_state()
     swift = Swift(setup_config, manager.get(role='swift_proxy'))
 
 
@@ -50,7 +50,7 @@ class TestSwiftSmallSetup():
         swift.wait_for_replica_regeneration()
 
     def tearDown(self):
-        manager.load()
+        manager.load_state()
         #manager.connect()  # should be done by load()
         # this is a workaround - the server restoration is not guaranteed to
         # restore the extra disks too, so we re-format them

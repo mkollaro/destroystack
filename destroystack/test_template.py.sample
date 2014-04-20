@@ -20,8 +20,8 @@
 First, copy this file and rename it to `test_<my_setup_name>.py`, for example
 `test_big_ha_neutron_setup.py`. This is beacause each test module is meant for
 a different topology - if the topology you need is already in some module, you
-can just edit that module. Replace all the occurences of `<my_setup_name>` in
-this file into your actual setup name.
+can just edit that module. Replace the constant `SETUP_NAME` with your actual
+setup name.
 
 You should edit `bin/generate_config_files.py` and add your setup there, so it
 would generate the file `bin/config.<my_setup_name>.json`. Ideally, you should
@@ -29,24 +29,25 @@ also provide some script or a link to a script that can deploy this setup, so
 that other people can use it.
 """
 
-import destroystack.tools.servers as server_tools
+from destroystack.tools.server_manager import ServerManager
 import destroystack.tools.common as common
 
-CONFIG = None
-servers = None
+SETUP_NAME = "my_setup_name"
+REPLICA_COUNT = 3
+
+manager = None
 
 
 def setup_module():
-    global CONFIG
-    global servers
+    global manager
     # each setup, i.e. topology, has its own configuration file which tells it
     # what services are running on which machines and how to access them
-    CONFIG = common.get_config("config.<my_setup_name>.json")
-    servers = server_tools.ServerManager(CONFIG)
+    setup_config = common.get_config("config.%s.json" % SETUP_NAME)
+    manager = ServerManager(setup_config)
     # if enabled in the configuration, create a snapshot of the machines, or
     # try backing up the files if the management is set to manual (not
     # recommended, it's only best-effort)
-    servers.save_state(tag='<my_setup_name>_clean')
+    manager.save_state()
 
 
 def teardown_module():
@@ -58,17 +59,16 @@ class TestMySetupName():
         # stuff that will be done for each test
         # you can select any server from the server manager, in this case it
         # selects a random compute node
-        self.server = servers.get(role='compute')
+        self.server = manager.get(role='compute')
         # command exacuted in the shell as root
         self.server.ssh('touch some_file')
 
     def tearDown(self):
-        # restore the snapshot with that tag (make sure you use the same tag as
-        # when saving the state) if snapshotting is enabled in the
+        # restore the snapshot if snapshotting is enabled in the
         # configuration, or restore the backed up files if the management is
         # set to manual. This will make sure that if one test destroys the
         # setup, another test can run with the same environment.
-        servers.load_state(tag='<my_setup_name>_clean')
+        manager.load_state()
 
     def test_reboot(self):
         self.server.reboot()
