@@ -16,7 +16,8 @@
 # limitations under the License.
 
 import logging
-from destroystack.tools import state_restoration
+import destroystack.tools.state_restoration.metaopenstack as metaopenstack
+import destroystack.tools.state_restoration.manual as manual_restoration
 import destroystack.tools.servers as server_tools
 
 # Possible roles that a server can have, depending what services are installed
@@ -126,16 +127,16 @@ class ServerManager(object):
 
         if man_type == 'metaopenstack':
             if action == 'save':
-                state_restoration.metaopenstack.create_snapshots(tag)
+                metaopenstack.create_snapshots(tag)
             else:
-                state_restoration.metaopenstack.restore_snapshots(tag)
+                metaopenstack.restore_snapshots(tag)
         elif man_type == 'vagrant':
             raise NotImplementedError("vagrant snapshots unavailable")
         elif man_type == 'manual':
             if action == 'save':
-                state_restoration.manual.create_backup(self)
+                manual_restoration.create_backup(self)
             else:
-                state_restoration.manual.restore_backup(self)
+                manual_restoration.restore_backup(self)
         elif man_type == 'none':
             LOG.info("State save and restoration has been turned off")
         else:
