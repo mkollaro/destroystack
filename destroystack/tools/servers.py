@@ -223,7 +223,7 @@ def partition_single_extra_disk(server):
         '/dev/{0}4 : start=        0, size=        0, Id= 0'
     ]).format(disk)
     server.umount(disk)
-    devices = server.cmd('ls /dev/%s*' % disk).split()
+    devices, _ = server.cmd('ls /dev/%s*' % disk)
     if len(devices) == 4:  # one main disk device, 3 partitions
         LOG.info("Partitions of the disk '/dev/%s' already exist" % disk)
     elif 1 < len(devices) < 4:
