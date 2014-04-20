@@ -88,6 +88,7 @@ def deploy_swift_small_setup(main_server):
     LOG.info("Running packstack, this may take a while")
     main_server.cmd("packstack --answer-file=%s" % answerfile, log_output=True)
     _configure_keystone(main_server, config["keystone"])
+    _set_swift_mount_check(data_servers)
 
 
 def install_packages(server, packages):
@@ -115,6 +116,20 @@ def _create_packstack_answerfile(main_server, answers, filename):
     for question, answer in answers.iteritems():
         main_server.cmd("openstack-config --set %s general %s %s"
                         % (filename, question, answer))
+
+
+def _set_swift_mount_check(data_servers):
+    """Set the parameter mount_check to True in /etc/swift/*-server.conf
+
+    If this is not checked True, Swift will replicate files onto the
+    system disk if the disk is umounted.
+    """
+    for server in data_servers:
+        server.cmd("""
+            sed -i -e 's/mount_check.*=.*false/mount_check = true/' \
+            /etc/swift/*-server.conf""")
+    for server in data_servers:
+        server.cmd("swift-init account container object rest restart")
 
 
 if __name__ == '__main__':

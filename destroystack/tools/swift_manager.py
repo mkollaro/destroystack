@@ -48,7 +48,6 @@ class SwiftManager(swiftclient.client.Connection):
         self._config = config
         self._get_servers()
         self._set_mount_check()
-        self._backup()
 
     def _get_servers(self):
         self.proxy_servers = \
@@ -96,11 +95,6 @@ class SwiftManager(swiftclient.client.Connection):
         LOG.info("all replicas found")
         return True
 
-    def mount_disks(self):
-        for server in self.data_servers:
-            for disk in server.disks:
-                server.cmd("mount /dev/%s" % disk)
-
     @timeout(TIMEOUT, "The replicas were not consistent within timeout.")
     def wait_for_replica_regeneration(self, count=3, check_nodes=None,
                                       exact=False):
@@ -116,126 +110,6 @@ class SwiftManager(swiftclient.client.Connection):
         LOG.info("Waiting until there is the right number of replicas")
         while not self.replicas_are_ok(count, check_nodes, exact):
             sleep(5)
-
-    def reset(self):
-        """ Remove all changes made to Swift since creating this object.
-
-        Useful to clean state between test cases. Cleans and re-mounts disks on
-        data servers. Restores rings and builder files, restarts swift services
-        on proxy servers.
-        """
-        try:
-            self._stop_services()
-            for server in self.proxy_servers:
-                server.cmd("""
-                    service rsyslog restart && service memcached restart &&
-                    cd /etc/swift &&
-                    rm -fr *.builder *.ring.gz backups """)
-            for server in self.data_servers:
-                server.cmd("rm -f /var/cache/swift/*.recon")
-                for disk in server.disks:
-                    server.umount(disk)
-                server.cmd("rm -fr /srv/node/device*/*")
-                for disk in server.disks:
-                    server.cmd("mkfs.ext4 /dev/%s && mount /dev/%s"
-                               % (disk, disk))
-        finally:
-            self._restore()
-
-    def _set_mount_check(self, restart_services=False):
-        """ Set the parameter mount_check to True in /etc/swift/*-server.conf
-
-        If this is not checked True, Swift will replicate files onto the
-        system disk if the disk is umounted.
-        """
-        for server in self.data_servers:
-            server.cmd("""
-                sed -i -e 's/mount_check.*=.*false/mount_check = true/' \
-                /etc/swift/*-server.conf""")
-        if restart_services:
-            self._restart_services()
-
-    def _backup(self):
-        """ Create backups of Swift files that keeps state and disk content.
-
-        Symmetric method to '_restore'. Backs up all .builder and .ring.gz on
-        the proxy servers, disk content of Swift disks and .recon files on the
-        data servers. While doing this, all Swift services are stopped and then
-        started again.
-        """
-        LOG.info("Saving Swift state")
-        try:
-            self._stop_services()
-            for server in self.proxy_servers:
-                server.cmd("""
-                    rm -fr /root/swift-backup/etc &&
-                    mkdir -p /root/swift-backup/etc &&
-                    cd /etc/swift &&
-                    cp -rp *.builder *.ring.gz /root/swift-backup/etc/""")
-            for server in self.data_servers:
-                server.cmd("rm -fr /root/swift-backup/{devices,cache}")
-                server.cmd("mkdir -p /root/swift-backup/{devices,cache}")
-                server.cmd(
-                    "cp -p /var/cache/swift/* /root/swift-backup/cache/",
-                    ignore_failure=True)
-                for device in server.get_mount_points().values():
-                    server.cmd("cp -rp %s /root/swift-backup/devices/"
-                               % device)
-        finally:
-            self._start_services()
-
-    def _restore(self):
-        """ Restore backups of Swift made by '_backup()'.
-
-        Symmetric method to '_backup'. Brings Swift back to the state where it
-        was when making the backup. While doing this, Swift services are
-        stopped and then started again.
-        """
-        LOG.info("Restoring Swift state")
-        try:
-            self._stop_services()
-            for server in self.proxy_servers:
-                server.cmd("cp -rp /root/swift-backup/etc/* /etc/swift/ ")
-            for server in self.data_servers:
-                for device in server.get_mount_points().values():
-                    server.cmd(
-                        "cp -rp /root/swift-backup/devices/* /srv/node/")
-                server.cmd("chown -R swift:swift /srv/node/*")
-                server.cmd("restorecon -R /srv/*")
-                server.cmd(
-                    "cp -rp /root/swift-backup/cache/* /var/cache/swift/",
-                    ignore_failure=True)
-        finally:
-            self._start_services()
-
-    def _stop_services(self):
-        for server in self.proxy_servers + self.data_servers:
-            try:
-                server.cmd("swift-init all stop", log_error=False)
-            except servers.ServerException:
-                # 'swift-init all stop' returns non-zero if the services are
-                # already stopped, so check if this is the case
-                services = self._get_running_services(server)
-                if len(services) > 0:
-                    raise servers.ServerException(
-                        "Could not stop Swift services: %s" % services)
-
-    def _start_services(self):
-        for server in self.data_servers:
-            server.cmd("swift-init account container object rest start")
-        for server in self.proxy_servers:
-            server.cmd("swift-init proxy start")
-
-    def _restart_services(self):
-        for server in self.data_servers:
-            server.cmd("swift-init account container object rest restart")
-        for server in self.proxy_servers:
-            server.cmd("swift-init proxy restart")
-
-    def _get_running_services(self, server):
-        output, _ = server.cmd("swift-init all status", ignore_failure=True)
-        return [line.split()[0] for line in output
-                if not line.startswith("No ")]
 
     def _get_account_hash(self):
         """ Gets the Swift account hash of the currently connected user.
@@ -275,20 +149,6 @@ class SwiftManager(swiftclient.client.Connection):
         urls = [line.split('#')[0].split()[-1].strip('" ')
                 for line in output]
         return urls
-
-    @staticmethod
-    def _single_disk_workaround(data_servers):
-        """Use the partitions of the disk instead of the single disk
-
-        If only one disk was given, then the deployment actually partitioned it
-        so that we can have storage devices.
-        TODO: check if the partitions actually exist
-        """
-        for server in data_servers:
-            if len(server.disks) == 1:
-                disk = server.disks[0]
-                partitions = [disk+"1", disk+"2", disk+"3"]
-                server.disks = partitions
 
 
 def file_urls_ok(urls, name, count=3, check_url_count=None, exact=False):

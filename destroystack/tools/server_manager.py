@@ -114,7 +114,7 @@ class ServerManager(object):
 
         Will re-create them if called a second time.
         """
-        pass
+        self._servers = server_tools.create_servers(self._config['servers'])
 
     def _choose_state_restoration_action(self, action, tag):
         """Choose which function to use, based on "management.type" in config.
@@ -133,9 +133,9 @@ class ServerManager(object):
             raise NotImplementedError("vagrant snapshots unavailable")
         elif man_type == 'manual':
             if action == 'save':
-                state_restoration.manual.create_backup(tag)
+                state_restoration.manual.create_backup(self)
             else:
-                state_restoration.manual.restore_backup(tag)
+                state_restoration.manual.restore_backup(self)
         elif man_type == 'none':
             LOG.info("State save and restoration has been turned off")
             pass
@@ -143,3 +143,16 @@ class ServerManager(object):
             raise Exception("This type of server management, '%s', is not"
                             "supported, choose among: %s"
                             % (man_type, MANAGEMENT_TYPES))
+
+    def _single_disk_workaround(self):
+        """Use the partitions of the disk instead of the single disk
+
+        If only one disk was given, then the deployment actually partitioned it
+        so that we can have storage devices.
+        TODO: check if the partitions actually exist
+        """
+        for server in self.servers(role='swift_data'):
+            if len(server.disks) == 1:
+                disk = server.disks[0]
+                partitions = [disk+"1", disk+"2", disk+"3"]
+                server.disks = partitions
