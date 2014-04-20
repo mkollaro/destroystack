@@ -210,19 +210,22 @@ class CommandResult(object):
         self._stdin = stdin
         self._stdout = stdout
         self._stderr = stderr
+        self._out = self._stdout.readlines()
+        self._err = self._stderr.readlines()
+        self._exit_code = self._stdout.channel.recv_exit_status()
         self._server_name = server_name
 
     @property
     def out(self):
-        return self._stdout.readlines()
+        return self._out
 
     @property
     def err(self):
-        return self._stderr.readlines()
+        return self._err
 
     @property
     def exit_code(self):
-        return self._stdout.channel.recv_exit_status()
+        return self._exit_code
 
     def __repr__(self):
         return ("[%s]\nstdout: %s\nstderr: %s\nexit code: %d"
