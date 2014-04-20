@@ -33,8 +33,6 @@ from destroystack.tools.server_manager import ServerManager
 import destroystack.tools.common as common
 
 SETUP_NAME = "my_setup_name"
-REPLICA_COUNT = 3
-
 manager = None
 
 

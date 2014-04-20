@@ -62,7 +62,7 @@ def create_snapshots(tag):
                  timeout=SNAPSHOT_TIMEOUT)
 
 
-def load_snapshots(tag):
+def restore_snapshots(tag):
     """Restore snapshots of servers - find them by name"""
     nova = _get_nova_client()
     vms, _ = _find_vms(nova)

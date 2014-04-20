@@ -91,7 +91,7 @@ class ServerManager(object):
 
         :param tag: will be appended to the name of the snapshots
         """
-        self._choose_sate_restoration_action('save', tag)
+        self._choose_state_restoration_action('save', tag)
 
     def load_state(self, tag=''):
         """Restore all the servers from their snapshots.
@@ -107,7 +107,7 @@ class ServerManager(object):
                 are going to be found by the name as described in the `save`
                 function.
         """
-        self._choose_sate_restoration_action('load', tag)
+        self._choose_state_restoration_action('load', tag)
 
     def connect(self):
         """Create ssh connections to all the servers.
@@ -138,7 +138,6 @@ class ServerManager(object):
                 state_restoration.manual.restore_backup(self)
         elif man_type == 'none':
             LOG.info("State save and restoration has been turned off")
-            pass
         else:
             raise Exception("This type of server management, '%s', is not"
                             "supported, choose among: %s"

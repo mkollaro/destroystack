@@ -54,7 +54,7 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
     return decorator
 
 
-def wait_for(label, condition, obj_getter, timeout=120, period=1):
+def wait_for(label, condition, obj_getter, timeout_sec=120, period=1):
     """Wait for condition to be true until timeout.
 
     :param label: used for logging
@@ -62,19 +62,19 @@ def wait_for(label, condition, obj_getter, timeout=120, period=1):
         returns True or False
     :param obj_getter: function that returns the object on which the condition
         is tested
-    :param timeout: how many seconds to wait until a TimeoutError
+    :param timeout_sec: how many seconds to wait until a TimeoutError
     :param period: how many seconds to wait between testing the condition
     :raises: TimeoutError when timeout_sec is exceeded
              and condition isn't true
     """
     obj = obj_getter()
-    timeout_ = datetime.timedelta(seconds=timeout)
+    timeout_ = datetime.timedelta(seconds=timeout_sec)
     start = datetime.datetime.now()
     LOG.info('%s - START' % label)
     while not condition(obj):
         if (datetime.datetime.now() - start) > timeout_:
             raise TimeExpired("waiting for '%s' expired after %d seconds"
-                              % (label, timeout))
+                              % (label, timeout_sec))
         time.sleep(period)
         obj = obj_getter()
     LOG.info('%s - DONE' % label)

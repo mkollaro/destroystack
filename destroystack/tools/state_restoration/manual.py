@@ -103,7 +103,7 @@ def _restore_backup_files(server_manager):
         for server in swift_proxy_servers:
             server.cmd("cp -rp /root/swift-backup/etc/* /etc/swift/ ")
         for server in swift_data_servers:
-            for device in server.get_mount_points().values():
+            for _ in server.get_mount_points().values():
                 server.cmd(
                     "cp -rp /root/swift-backup/devices/* /srv/node/")
             server.cmd("chown -R swift:swift /srv/node/*")

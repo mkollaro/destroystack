@@ -21,7 +21,7 @@ logging.basicConfig(level=logging.INFO)
 def main():
     general_config = common.get_config()
     manager = ServerManager(general_config)
-    manager.save()
+    manager.save_state()
 
 
 if __name__ == '__main__':
