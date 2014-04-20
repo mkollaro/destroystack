@@ -30,7 +30,7 @@ SNAPSHOT_TIMEOUT = 5*60
 CONFIG = common.get_config()
 
 
-def create_snapshots(tag):
+def create_snapshots(tag=''):
     """Create snapshots of OpenStack VMs and wait until they are active.
     """
     nova = _get_nova_client()
@@ -62,7 +62,7 @@ def create_snapshots(tag):
                  timeout=SNAPSHOT_TIMEOUT)
 
 
-def restore_snapshots(tag):
+def restore_snapshots(tag=''):
     """Restore snapshots of servers - find them by name"""
     nova = _get_nova_client()
     vms, _ = _find_vms(nova)
@@ -80,13 +80,13 @@ def restore_snapshots(tag):
         wait_for("Waiting until VM '%s' is in active state" % vm.name,
                  lambda x: x.status == 'ACTIVE',
                  lambda: nova.servers.get(vm_id),
-                 timeout=SNAPSHOT_TIMEOUT)
+                 timeout_sec=SNAPSHOT_TIMEOUT)
     # create new ssh connections
     # TODO wait until ssh works, not just an arbitrary sleep
     time.sleep(3*60)
 
 
-def delete_snapshots(tag):
+def delete_snapshots(tag=''):
     nova = _get_nova_client()
     vms, _ = _find_vms(nova)
     for vm_id in vms:

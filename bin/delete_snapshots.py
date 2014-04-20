@@ -10,14 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Delete snapshots in the metaopenstack that manages the servers.
+
+Use this if you have `management.type` set to `metaopenstack` in the
+configuration to get rid of the snapshot images of the servers.
+"""
+
 import logging
-import destroystack.tools.servers_state as servers_state
+import destroystack.tools.state_restoration.metaopenstack as metaopenstack
 
 logging.basicConfig(level=logging.INFO)
 
 
 def main():
-    servers_state.delete()
+    metaopenstack.delete_snapshots()
 
 
 if __name__ == '__main__':
