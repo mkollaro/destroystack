@@ -19,7 +19,6 @@ import swiftclient
 import logging
 import requests
 from time import sleep
-import destroystack.tools.servers as servers
 import destroystack.tools.common as common
 from destroystack.tools.timeout import timeout
 
@@ -30,34 +29,25 @@ TIMEOUT = common.get_timeout()
 swiftclient.client.logger.setLevel(logging.INFO)
 
 
-class SwiftManager(swiftclient.client.Connection):
-    """Manage Swift servers and connection.
+class Swift(swiftclient.client.Connection):
+    """Swift client and extra functionality
 
     :param config: dictionary created by "bin/generate_config_files.py", needs
-        a "keystone" item with "auth_url", "user" and "password" items and a
-        "swift" item with "proxy_servers" and "data_servers".
+        a "keystone" item with "auth_url", "user" and "password"
+    :param proxy_server: Server object of the Swift proxy node, allowing it to
+        run Swift administration commands
     """
-    def __init__(self, config):
-        keystone = config["keystone"]
-        super(SwiftManager, self).__init__(
-            keystone["auth_url"],
-            keystone["user"],
-            keystone["password"],
+    def __init__(self, config, proxy_server):
+        super(Swift, self).__init__(
+            config['keystone']['auth_url'],
+            config['keystone']['user'],
+            config['keystone']['password'],
             auth_version='2',
-            tenant_name=keystone["user"])
-        self._config = config
-        self._get_servers()
-        self._set_mount_check()
-
-    def _get_servers(self):
-        self.proxy_servers = \
-            servers.create_servers(self._config["swift"]["proxy_servers"])
-        self.data_servers = \
-            servers.create_servers(self._config["swift"]["data_servers"])
-        self._single_disk_workaround(self.data_servers)
+            tenant_name=config['keystone']['user'])
+        self.proxy_server = proxy_server
 
     def replicas_are_ok(self, count=3, check_nodes=None, exact=False):
-        """ Check if all objects and containers have enough replicas.
+        """Check if all objects and containers have enough replicas.
 
         If no replicas of the object or container are left (so they got removed
         completely), this method will not be able to recognize that and will
@@ -68,7 +58,7 @@ class SwiftManager(swiftclient.client.Connection):
 
         :param check_nodes: Look only at first x number of nodes. Since usually
             the first 'count' nodes are primary nodes, if you set
-        wif   'check_nodes=count', no handoff nodes will be checked out. If
+           'check_nodes=count', no handoff nodes will be checked out. If
             set to None, try all of them.
         :param exact: also fail if there are more than 'count' replicas
         :returns: True iff there are 'count' replicas of everything
@@ -120,7 +110,7 @@ class SwiftManager(swiftclient.client.Connection):
 
     def _get_replicas_direct_urls(self, account_hash, container_name=None,
                                   object_name=None):
-        """ Return a tuple of the URLs of replicas.
+        """Return a tuple of the URLs of replicas.
 
         The returned URLs are where the account/container/object replicas can
         be directly accessed. The object (or anything else) doesn't actually
@@ -145,7 +135,7 @@ class SwiftManager(swiftclient.client.Connection):
             object_name = ''
         cmd = "swift-get-nodes -a /etc/swift/%s.ring.gz %s %s %s |grep curl" \
               % (ring, account_hash, container_name, object_name)
-        output, _ = self.proxy_servers[0].cmd(cmd)
+        output, _ = self.proxy_server.cmd(cmd)
         urls = [line.split('#')[0].split()[-1].strip('" ')
                 for line in output]
         return urls
