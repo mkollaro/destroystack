@@ -157,6 +157,6 @@ def restart_swift_services(proxy_servers, data_servers):
 
 
 def get_running_swift_services(server):
-    output, _ = server.cmd("swift-init all status", ignore_failure=True)
+    output = server.cmd("swift-init all status", ignore_failure=True).out
     return [line.split()[0] for line in output
             if not line.startswith("No ")]

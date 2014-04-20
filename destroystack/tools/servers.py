@@ -142,10 +142,9 @@ class Server(object):
         """
         mount_points = dict()
         for disk in self.disks:
-            stdout, _ = self.cmd(
-                "mount|grep '/dev/%s '| awk '{print $3}'" % disk)
-            if stdout:
-                mount_points[disk] = stdout[0].strip()
+            result = self.cmd("mount|grep '/dev/%s '| awk '{print $3}'" % disk)
+            if result.out:
+                mount_points[disk] = result.out[0].strip()
         return mount_points
 
     def get_mounted_disks(self):
@@ -193,16 +192,41 @@ class SSH(paramiko.SSHClient):
         """
         if log_cmd:
             LOG.info("[%s] %s", self.name, command)
-        _, stdout, stderr = self.exec_command(command)
-        out = stdout.readlines()
-        err = stderr.readlines()
+        stdin, stdout, stderr = self.exec_command(command)
+        result = CommandResult(stdin, stdout, stderr, self.name)
         if log_output:
-            _log_output(out, err)
-        if not ignore_failure and stdout.channel.recv_exit_status() != 0:
+            _log_output(result.out, result.err)
+        if not ignore_failure and result.exit_code != 0:
             if log_error and not log_output:
-                _log_output(out, err)
-            raise ServerException(self.name, err)
-        return out, err
+                _log_output(result.out, result.err)
+            raise ServerException(self.name, result.err)
+        return result
+
+
+class CommandResult(object):
+    """Wrapper around SSH command result, for easier usage of `Server.cmd()`
+    """
+    def __init__(self, stdin, stdout, stderr, server_name):
+        self._stdin = stdin
+        self._stdout = stdout
+        self._stderr = stderr
+        self._server_name = server_name
+
+    @property
+    def out(self):
+        return self._stdout.readlines()
+
+    @property
+    def err(self):
+        return self._stderr.readlines()
+
+    @property
+    def exit_code(self):
+        return self._stdout.channel.recv_exit_status()
+
+    def __repr__(self):
+        return ("[%s]\nstdout: %s\nstderr: %s\nexit code: %d"
+                % (self._server_name, self.out, self.err, self.exit_code))
 
 
 def partition_single_extra_disk(server):
@@ -223,7 +247,7 @@ def partition_single_extra_disk(server):
         '/dev/{0}4 : start=        0, size=        0, Id= 0'
     ]).format(disk)
     server.umount(disk)
-    devices, _ = server.cmd('ls /dev/%s*' % disk)
+    devices = server.cmd('ls /dev/%s*' % disk).out
     if len(devices) == 4:  # one main disk device, 3 partitions
         LOG.info("Partitions of the disk '/dev/%s' already exist" % disk)
     elif 1 < len(devices) < 4:

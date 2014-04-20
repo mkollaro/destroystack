@@ -135,7 +135,7 @@ class Swift(swiftclient.client.Connection):
             object_name = ''
         cmd = "swift-get-nodes -a /etc/swift/%s.ring.gz %s %s %s |grep curl" \
               % (ring, account_hash, container_name, object_name)
-        output, _ = self.proxy_server.cmd(cmd)
+        output = self.proxy_server.cmd(cmd).out
         urls = [line.split('#')[0].split()[-1].strip('" ')
                 for line in output]
         return urls
