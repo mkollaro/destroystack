@@ -16,34 +16,6 @@
 # limitations under the License.
 
 
-"""Handle the state restoration of server.
-
-Since destroystack injects failures into the tested system, there has to be
-some isolation between tests, otherwise a failure caused by one test might
-cause an unwanted failure in the next one.
-
-This module can save and restore the state by various methods.  The type of
-state restoration is decided in the configuration, "management.type", which can
-be:
-    * manual
-    * none
-    * openstack
-    * vagrant (not implemented)
-    * vagrant-libvirt (not implemented)
-    * lvm (not implemented)
-
-The basic one is of type 'manual' - it just backs up some files and restores
-them after the tests, plus starts up the services that were turned off and
-similar. It's just a best effort restoration - it takes a lot of work to get it
-working properly and is not supported for everything. Try not to rely on it if
-possible.
-
-The better way is to use snapshots, although this requires that the servers are
-VMs. Right now, only snapshots of OpenStack VMs is supported, but VirtualBox
-(trough vagrant) and libvirt might get supported in the future. For bare metal,
-using the LVM snapshots might get supported.
-"""
-
 import logging
 import time
 import itertools
@@ -58,57 +30,11 @@ SNAPSHOT_TIMEOUT = 5*60
 CONFIG = common.get_config()
 
 
-def save(tag=''):
-    _choose_action('save', tag)
-
-
-def load(tag=''):
-    _choose_action('load', tag)
-
-
-def delete(tag=''):
-    """Delete all the snapshots of the servers.
-
-    For more information, see the function ``save``.
-
-    Depending on what is in the configuration in "management.type":
-        * manual - Do nothing (removing the backup files is not implemented)
-        * none - Do nothing
-        * openstack - Remove all the snapshots with the names as described in
-            the ``save`` function
-    """
-    _choose_action('delete', tag)
-
-
-def _choose_action(action, tag):
-    if 'management' not in CONFIG or 'type' not in CONFIG['management']:
-        raise Exception("The management type has to be in config")
-    assert action in ['save', 'load', 'delete']
-
-    type = CONFIG['management']['type']
-    if type == 'openstack':
-        if action == 'save':
-            _create_openstack_snapshots(tag)
-        elif action == 'load':
-            _load_openstack_snapshots(tag)
-        else:
-            _delete_openstack_snapshots(tag)
-    elif type == 'vagrant':
-        raise NotImplementedError("vagrant snapshots are not implemented yet")
-    elif type == 'manual':
-        raise NotImplementedError("to be done very soon")
-    elif type == 'none':
-        LOG.info("State save and restoration has been turned off")
-    else:
-        raise Exception("This type of server management, '%s', is not"
-                        "supported" % type)
-
-
-def _create_openstack_snapshots(tag):
+def create_snapshots(tag):
     """Create snapshots of OpenStack VMs and wait until they are active.
     """
     nova = _get_nova_client()
-    vms, ssh_servers = _find_openstack_vms(nova)
+    vms, ssh_servers = _find_vms(nova)
 
     snapshots = list()
     for vm_id, ssh in zip(vms, ssh_servers):
@@ -136,10 +62,10 @@ def _create_openstack_snapshots(tag):
                  timeout=SNAPSHOT_TIMEOUT)
 
 
-def _load_openstack_snapshots(tag):
+def load_snapshots(tag):
     """Restore snapshots of servers - find them by name"""
     nova = _get_nova_client()
-    vms, _ = _find_openstack_vms(nova)
+    vms, _ = _find_vms(nova)
     for vm_id in vms:
         vm = nova.servers.get(vm_id)
         snapshot_name = _get_snapshot_name(vm.name, tag)
@@ -160,9 +86,9 @@ def _load_openstack_snapshots(tag):
     time.sleep(3*60)
 
 
-def _delete_openstack_snapshots(tag):
+def delete_snapshots(tag):
     nova = _get_nova_client()
-    vms, _ = _find_openstack_vms(nova)
+    vms, _ = _find_vms(nova)
     for vm_id in vms:
         vm = nova.servers.get(vm_id)
         snapshot_name = _get_snapshot_name(vm.name, tag)
@@ -196,7 +122,7 @@ def _get_snapshot_name(vm_name, tag):
     return name
 
 
-def _find_openstack_vms(novaclient):
+def _find_vms(novaclient):
     """Search for VMs by their ID or IP address
 
     :returns: list of VMs and list of Server objects (which have the ssh
@@ -208,7 +134,7 @@ def _find_openstack_vms(novaclient):
         if 'id' in server:
             vm = novaclient.servers.get(server['id'])
         else:
-            vm = _find_openstack_vm_by_ip(novaclient, server['hostname'])
+            vm = _find_vm_by_ip(novaclient, server['hostname'])
 
         if vm is None:
             raise exceptions.NotFound("Couldn't find server:\n %s" % server)
@@ -218,7 +144,7 @@ def _find_openstack_vms(novaclient):
     return vms, ssh_servers
 
 
-def _find_openstack_vm_by_ip(novaclient, ip):
+def _find_vm_by_ip(novaclient, ip):
     """Search trough all VMs and find one that has that IP on any network
 
     Look at all the networks for each VM and see if one of them has that IP

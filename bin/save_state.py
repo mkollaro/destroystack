@@ -11,14 +11,17 @@
 # limitations under the License.
 
 import logging
-import destroystack.tools.servers_state as servers_state
+from destroystack.tools.server_manager import ServerManager
+import destroystack.tools.common as common
 
 
 logging.basicConfig(level=logging.INFO)
 
 
 def main():
-    servers_state.save()
+    general_config = common.get_config()
+    manager = ServerManager(general_config)
+    manager.save()
 
 
 if __name__ == '__main__':

@@ -24,7 +24,7 @@ import destroystack.tools.servers as server_tools
 ROLES = set(['keystone', 'swift_proxy', 'swift_data', 'controller', 'compute',
              'glance', 'cinder', 'neutron'])
 
-MANAGEMENT_TYPES = ['none', 'manual', 'openstack']
+MANAGEMENT_TYPES = ['none', 'manual', 'metaopenstack']
 
 LOG = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ class ServerManager(object):
             * manual - Just create some backup of the files and maybe
                 databases.  Unsupported and not recommended.
             * none - Do nothing
-            * openstack - Create a snapshot of all the servers in the config
+            * metaopenstack - Create a snapshot of all the servers
 
         If it's being created, the name of the snapshots (if created) will be
         "config.management.snapshot_prefix" + name of the VM + tag, where the
@@ -103,8 +103,8 @@ class ServerManager(object):
                 services again. Unsupported, might not work - it's just a best
                 effort.
             * none - Do nothing
-            * openstack - Rebuild the VMs with the snapshot images, which are
-                going to be found by the name as described in the `save`
+            * metaopenstack - Rebuild the VMs with the snapshot images, which
+                are going to be found by the name as described in the `save`
                 function.
         """
         self._choose_sate_restoration_action('load', tag)
@@ -124,11 +124,11 @@ class ServerManager(object):
         assert action in ['save', 'load']
         man_type = self._config['management']['type']
 
-        if man_type == 'openstack':
+        if man_type == 'metaopenstack':
             if action == 'save':
-                state_restoration.openstack.create_snapshots(tag)
+                state_restoration.metaopenstack.create_snapshots(tag)
             else:
-                state_restoration.openstack.restore_snapshots(tag)
+                state_restoration.metaopenstack.restore_snapshots(tag)
         elif man_type == 'vagrant':
             raise NotImplementedError("vagrant snapshots unavailable")
         elif man_type == 'manual':
