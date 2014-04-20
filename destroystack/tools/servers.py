@@ -192,7 +192,7 @@ class SSH(paramiko.SSHClient):
         :raises: ServerException
         """
         if log_cmd:
-            LOG.info("SSH command on %s: %s", self.name, command)
+            LOG.info("[%s] %s", self.name, command)
         _, stdout, stderr = self.exec_command(command)
         out = stdout.readlines()
         err = stderr.readlines()
