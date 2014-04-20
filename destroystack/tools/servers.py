@@ -38,23 +38,37 @@ def create_servers(configs):
 class ServerException(Exception):
     """ Raised when there was a problem executing an SSH command on a server.
     """
-    def __init__(self, hostname, message, **kwargs):
-        new_msg = "[%s] %s" % (hostname, message)
+    def __init__(self, command, message=None, **kwargs):
+        new_msg = str(command)
+        if message:
+            new_msg += message
         super(ServerException, self).__init__(new_msg, **kwargs)
 
 
-class LocalServer():
-    def cmd(self, cmd, log_cmd=True, log_output=True, **kwargs):
-        """Wrapper around subprocess.check_call() for logging purposes."""
+class LocalServer(object):
+    name = 'localhost'
+
+    def cmd(self, command, ignore_failures=False, log_cmd=True,
+            log_output=True, **kwargs):
+        """Wrapper around subprocess command for logging purposes."""
         if log_cmd:
-            LOG.info("Running local command: %s", cmd)
-        output = subprocess.check_call(cmd, shell=True, **kwargs)
-        if log_output and output:
-            LOG.info("Output: %s", output)
-        return output
+            LOG.info("[%s] %s", self.name, command)
+
+        p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        result = CommandResult(self.name, command)
+        result.parse_subprocess_results(stdout, stderr, p.returncode)
+        if log_output and result.out:
+            LOG.info("[%s stdout] %s", result.out)
+        if log_output and result.err:
+            LOG.info("[%s stderr] %s", result.err)
+        if result.exit_code != 0 and not ignore_failures:
+            raise ServerException(result)
+        return result
 
 
-class Server(object):
+class Server(LocalServer):
     """ Manage server.
 
     Maintains an SSH connection to the server, keeps track of disks and their
@@ -75,10 +89,13 @@ class Server(object):
             username = "root"
             password = kwargs["root_password"]
 
-        self.cmd = SSH(self.name)
-        self.cmd.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.cmd.load_system_host_keys()
-        self.cmd.connect(hostname, username=username, password=password)
+        self._ssh = SSH(self.name)
+        self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self._ssh.load_system_host_keys()
+        self._ssh.connect(hostname, username=username, password=password)
+
+    def cmd(self, command, **kwargs):
+        return self._ssh(command, **kwargs)
 
     def __str__(self):
         return self.name
@@ -182,45 +199,54 @@ class SSH(paramiko.SSHClient):
         super(SSH, self).__init__()
         self.name = name
 
-    def __call__(self, command, ignore_failure=False,
-                 log_cmd=True, log_output=False, log_error=True):
+    def __call__(self, command, ignore_failures=False,
+                 log_cmd=True, log_output=False, **kwargs):
         """ Similar to exec_command, but checks for errors.
 
         If an error occurs, it logs the command, stdout and stderr.
 
         :param command: any bash command
-        :param ignore_failure: don't raise an exception if an error occurs (and
-            don't log the output either)
-        :param log_error: if an error occurs, log stdout and stderr; don't log
-            them again if log_output is true
-        :param log_output: always log output
+        :param ignore_failures: don't raise an exception if an error occurs
+        :param log_output: always log output, both stdout and stderr
         :param log_cmd: log the command and the name of server where it is run
         :raises: ServerException
         """
         if log_cmd:
             LOG.info("[%s] %s", self.name, command)
-        stdin, stdout, stderr = self.exec_command(command)
-        result = CommandResult(stdin, stdout, stderr, self.name)
-        if log_output:
-            _log_output(result.out, result.err)
-        if not ignore_failure and result.exit_code != 0:
-            if log_error and not log_output:
-                _log_output(result.out, result.err)
-            raise ServerException(self.name, result.err)
+        _, stdout, stderr = self.exec_command(command, **kwargs)
+        result = CommandResult(self.name, command)
+        result.parse_paramiko_results(stdout, stderr)
+
+        if log_output and result.out:
+            LOG.info("[%s stdout] %s", result.out)
+        if log_output and result.err:
+            LOG.info("[%s stderr] %s", result.err)
+        if result.exit_code != 0 and not ignore_failures:
+            raise ServerException(result)
         return result
 
 
 class CommandResult(object):
     """Wrapper around SSH command result, for easier usage of `Server.cmd()`
     """
-    def __init__(self, stdin, stdout, stderr, server_name):
-        self._stdin = stdin
-        self._stdout = stdout
-        self._stderr = stderr
-        self._out = self._stdout.readlines()
-        self._err = self._stderr.readlines()
-        self._exit_code = self._stdout.channel.recv_exit_status()
+    def __init__(self, server_name, command):
         self._server_name = server_name
+        self._out = []
+        self._err = []
+        self._exit_code = None
+        self._command = command
+
+    def parse_paramiko_results(self, stdout, stderr):
+        self._exit_code = stdout.channel.recv_exit_status()
+        self._out = [line.strip('\n') for line in stdout.readlines()]
+        self._err = [line.strip('\n') for line in stderr.readlines()]
+
+    def parse_subprocess_results(self, stdout, stderr, exit_code):
+        self._exit_code = exit_code
+        if stdout:
+            self._out = stdout.strip().split('\n')
+        if stderr:
+            self._err = stderr.strip().split('\n')
 
     @property
     def out(self):
@@ -235,8 +261,9 @@ class CommandResult(object):
         return self._exit_code
 
     def __repr__(self):
-        return ("[%s]\nstdout: %s\nstderr: %s\nexit code: %d"
-                % (self._server_name, self.out, self.err, self.exit_code))
+        return ("[%s] %s\nstdout: %s\nstderr: %s\nexit code: %d"
+                % (self._server_name, self._command,
+                   self.out, self.err, self.exit_code))
 
 
 def partition_single_extra_disk(server):
@@ -257,11 +284,12 @@ def partition_single_extra_disk(server):
         '/dev/{0}4 : start=        0, size=        0, Id= 0'
     ]).format(disk)
     server.umount(disk)
-    devices = server.cmd('ls /dev/%s*' % disk).out
+    result = server.cmd('ls /dev/%s*' % disk)
+    devices = result.out
     if len(devices) == 4:  # one main disk device, 3 partitions
         LOG.info("Partitions of the disk '/dev/%s' already exist" % disk)
     elif 1 < len(devices) < 4:
-        raise ServerException(server.name, "Partitions of '/dev/%s' exist, but"
+        raise ServerException(result, "Partitions of '/dev/%s' exist, but"
                               " there is an incorrect number of them"
                               " - there should be 3 of them" % disk)
     else:

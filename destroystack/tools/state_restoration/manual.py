@@ -65,7 +65,7 @@ def create_backup(server_manager):
             server.cmd("mkdir -p /root/swift-backup/{devices,cache}")
             server.cmd(
                 "cp -p /var/cache/swift/* /root/swift-backup/cache/",
-                ignore_failure=True)
+                ignore_failures=True)
             for device in server.get_mount_points().values():
                 server.cmd("cp -rp %s /root/swift-backup/devices/"
                            % device)
@@ -124,7 +124,7 @@ def _restore_backup_files(server_manager):
             server.cmd("restorecon -R /srv/*")
             server.cmd(
                 "cp -rp /root/swift-backup/cache/* /var/cache/swift/",
-                ignore_failure=True)
+                ignore_failures=True)
     finally:
         start_swift_services(swift_proxy_servers, swift_data_servers)
 
@@ -139,6 +139,7 @@ def stop_swift_services(proxy_servers, data_servers):
             services = get_running_swift_services(server)
             if len(services) > 0:
                 raise servers.ServerException(
+                    "[%s] " % server.name,
                     "Could not stop Swift services: %s" % services)
 
 
