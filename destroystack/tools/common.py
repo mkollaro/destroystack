@@ -26,7 +26,7 @@ PROJ_DIR = os.path.join(os.path.dirname(__file__), "..", "..")
 PROJ_DIR = os.path.normpath(PROJ_DIR)
 CONFIG_DIR = os.path.join(PROJ_DIR, "etc")
 BIN_DIR = os.path.join(PROJ_DIR, "bin")
-TESTFILE_DIR = os.path.join(PROJ_DIR, "test_files")
+TESTFILE_DIR = os.path.join(PROJ_DIR, "tmp", "test_files")
 
 SUPPORTED_SETUPS = ["swift_small_setup"]
 # file in the ./etc/ direcotry
@@ -83,6 +83,8 @@ def populate_swift_with_random_files(swift, prefix='',
                   for i in range(0, container_count)]
     files = [prefix + "file" + str(i) + ".txt"
              for i in range(0, container_count*files_per_container)]
+    if not os.path.exists(TESTFILE_DIR):
+        os.makedirs(TESTFILE_DIR)
     for filename in files:
         f = open(os.path.join(TESTFILE_DIR, filename), 'w')
         f.write(random_string()+'\n')
