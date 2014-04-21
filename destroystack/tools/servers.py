@@ -278,7 +278,63 @@ class CommandResult(object):
                    '\n'.join(self.out), '\n'.join(self.err), self.exit_code))
 
 
-def partition_single_extra_disk(server, disk):
+def prepare_swift_disks(servers):
+    """Format and partition disks if neccessary.
+
+    For the Swift tests, we need data servers with 3 disks each, but for
+    convenience we allow the user to specify a single disk and it will be
+    partitioned into 3 "disks". So partition it if only one is given or if the
+    partitions don't exist. Update the `server.disks` if this has been done.
+
+    The disks or partitions will be all formatted with the ext4 filesystem.
+
+    :param servers: should be a list of Server objects with connection to swift
+        data nodes
+    :returns: a list in form ["ip.address/vda", "ip.address.2/vda"] that can be
+    used in the packstack answerfile.
+    """
+    description = list()
+    for server in servers:
+        partition_disk = _needs_partitioning(server)
+        if partition_disk:
+            LOG.info("Only one extra disk on %s, create partitions on it and"
+                     " use those instead" % server)
+            _partition_swift_disk(server, partition_disk)
+        if len(server.disks) == 1:
+            disk = server.disks[0]
+            server.disks = [disk+"1", disk+"2", disk+"3"]
+        LOG.info("Formatting extra disks on %s" % server)
+        server.format_extra_disks()
+        # get description of devices for packstack answerfile
+        ip = gethostbyname(server.hostname)
+        devices = ['/'.join([ip, disk]) for disk in server.disks]
+        description.extend(devices)
+    return description
+
+
+def _needs_partitioning(server):
+    """Return disk that needs to be partitioned to be used by Swift
+
+    If, for example, "sdb" is the only given disk and "sdb1, sdb2, sdb3" don't
+    exist, it will return "sdb" as the disk to be partitioned. If the
+    partitions of a disk are given, like "sdb1, sdb2, sdb3", but don't exist,
+    return "sdb1" as the disk to be partitioned. If there are enough existing
+    disks/partitions, return None.
+    """
+    disks_description = ' '.join(['/dev/%s*' % disk.strip('123456789')
+                                  for disk in server.disks])
+    print disks_description
+    result = server.cmd('ls %s' % disks_description)
+    devices = set(result.out)
+    print devices
+    if len(devices) == 1:
+        return devices[0]
+    else:
+        LOG.info("Using devices: %s" % devices)
+        return None
+
+
+def _partition_swift_disk(server, disk):
     """Workaround when only one disk is available and we need more
 
     When only one disk is available and we need 3 for Swift storage, create
@@ -294,68 +350,6 @@ def partition_single_extra_disk(server, disk):
         '/dev/{0}4 : start=        0, size=        0, Id= 0'
     ]).format(disk)
     server.umount(disk)
-    result = server.cmd('ls /dev/%s*' % disk)
-    devices = result.out
-    if len(devices) == 4:  # one main disk device, 3 partitions
-        LOG.info("Partitions of the disk '/dev/%s' already exist" % disk)
-    elif 1 < len(devices) < 4:
-        raise ServerException(result, "Partitions of '/dev/%s' exist, but"
-                              " there is an incorrect number of them"
-                              " - there should be 3 of them" % disk)
-    else:
-        LOG.info('Creating 3 partitions on %s:/dev/%s' % (server.name, disk))
-        server.cmd('echo -e \'%s\' > partition_table' % partition_table)
-        server.cmd('sfdisk /dev/%s < partition_table' % disk)
-    return [disk+'1', disk+'2', disk+'3']
-
-
-def _log_output(stdout, stderr):
-    if stdout:
-        LOG.info("SSH command stdout:\n" + " ".join(stdout).strip())
-    if stderr:
-        LOG.error("SSH command stderr:\n" + " ".join(stderr).strip())
-
-
-def prepare_extra_disks(servers):
-    """Format and partition disks if neccessary.
-
-    Return a list in form ["ip.address/vda", "ip.address.2/vda"]
-    """
-    description = list()
-    for server in servers:
-        # TODO check if disk is partitioned, i.e. the partitions give in
-        # server.disks exist
-
-        if len(server.disks) == 1:
-            LOG.info("Only one extra disk on %s, create partitions on it and"
-                     " use those instead" % server)
-            partition_single_extra_disk(server)
-        LOG.info("Formatting extra disks on %s" % server)
-        server.format_extra_disks()
-        # get description of devices for packstack answerfile
-        ip = gethostbyname(server.hostname)
-        devices = ['/'.join([ip, disk]) for disk in server.disks]
-        description.extend(devices)
-    return description
-
-
-def _needs_partitioning(server):
-    """Check if partitions need to be created on the swift disk.
-
-    For the Swift test, we need 2 data servers with 3 disks each, but for
-    convenience we allow the user to specify a single disk and it will be
-    partitioned into 3 "disks". See if we have to do that.
-
-    If actual disks are given (for example, sdb, sdc, sdd) and they exist,
-    return False, otherwise raise exception.
-
-    If a single disk is given and it doesn't have 3 partitions,
-    return True. If the partitions are given (e.g. sdb1, sdb2,
-    sdb3) and they don't exist yet, return True.
-    """
-    if len(server.disks) >= 3 and number not in diskname:
-        devices = server.cmd('ls /dev/%s*' % disk)
-
-    for disk in server.disks:
-        devices = server.cmd('ls /dev/%s*' % disk)
-
+    LOG.info('Creating 3 partitions on %s:/dev/%s' % (server.name, disk))
+    server.cmd('echo -e \'%s\' > partition_table' % partition_table)
+    server.cmd('sfdisk /dev/%s < partition_table' % disk)

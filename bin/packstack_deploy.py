@@ -73,7 +73,7 @@ def deploy_swift_small_setup(main_server):
     keystone = manager.get(role='keystone')
     proxy_servers_ip = [s.ip for s in manager.servers(role='swift_proxy')]
     data_servers = list(manager.servers(role='swift_data'))
-    data_nodes = server_tools.prepare_extra_disks(data_servers)
+    data_nodes = server_tools.prepare_swift_disks(data_servers)
 
     packstack_opt = copy(PACKSTACK_DEFAULT_OPTIONS)
     packstack_opt["CONFIG_SWIFT_INSTALL"] = "y"

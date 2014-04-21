@@ -111,8 +111,6 @@ class ServerManager(object):
         self._choose_state_restoration_action('load', tag)
         self.connect()
         # workaround for the fact that the extra disk might not get snapshotted
-        server_tools.prepare_extra_disk(list(self.servers(role='swift_data')))
-        self._single_disk_workaround()
         self._restore_swift_disks()
 
     def connect(self):
@@ -162,13 +160,7 @@ class ServerManager(object):
         user.
         """
         data_servers = list(self.servers(role='swift_data'))
-        for server in data_servers:
-            if len(server.disks) == 1:
-                # only single disk was specified, use partitions of it
-                disk = server.disks[0]
-                partitions = [disk+"1", disk+"2", disk+"3"]
-                server.disks = partitions
-
+        server_tools.prepare_swift_disk(data_servers)
         if mount:
             for server in data_servers:
                 for disk in server.disks:
