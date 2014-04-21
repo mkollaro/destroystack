@@ -41,7 +41,7 @@ def teardown_module():
 
 class TestSwiftSmallSetup():
     def setUp(self):
-        self.data_servers = manager.servers(role='swift_data')
+        self.data_servers = list(manager.servers(role='swift_data'))
         if len(self.data_servers) < 2:
             raise Exception("You need at least 2 Swfit data servers for the"
                             " '%s' tests" % SETUP_NAME)
