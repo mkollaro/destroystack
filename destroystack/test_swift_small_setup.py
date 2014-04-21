@@ -51,12 +51,6 @@ class TestSwiftSmallSetup():
 
     def tearDown(self):
         manager.load_state()
-        #manager.connect()  # should be done by load()
-        # this is a workaround - the server restoration is not guaranteed to
-        # restore the extra disks too, so we re-format them
-        # servers.prepare_extra_disks(setup_config['swift']['data_servers'])
-        #swift.mount_disks()
-        #swift.reset()
 
     def test_one_disk_down(self):
         self.data_servers[0].kill_disk()

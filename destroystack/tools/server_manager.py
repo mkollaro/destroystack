@@ -109,6 +109,11 @@ class ServerManager(object):
                 function.
         """
         self._choose_state_restoration_action('load', tag)
+        self.connect()
+        # workaround for the fact that the extra disk might not get snapshotted
+        server_tools.prepare_extra_disk(list(self.servers(role='swift_data')))
+        self._single_disk_workaround()
+        self._restore_swift_disks()
 
     def connect(self):
         """Create ssh connections to all the servers.
@@ -156,3 +161,8 @@ class ServerManager(object):
                 disk = server.disks[0]
                 partitions = [disk+"1", disk+"2", disk+"3"]
                 server.disks = partitions
+
+    def _restore_swift_disks(self):
+        for server in self.servers(role='swift_data'):
+            for disk in server.disks:
+                server.restore_disks(disk)
