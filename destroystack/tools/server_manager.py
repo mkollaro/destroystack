@@ -148,7 +148,7 @@ class ServerManager(object):
                             "supported, choose among: %s"
                             % (man_type, MANAGEMENT_TYPES))
 
-    def _restore_swift_disks(self, mount=False):
+    def _restore_swift_disks(self):
         """These disks might not have been snapshotted.
 
         Since the extra disk is currently maybe not being snapshotted (it is
@@ -161,7 +161,6 @@ class ServerManager(object):
         """
         data_servers = list(self.servers(role='swift_data'))
         server_tools.prepare_swift_disks(data_servers)
-        if mount:
-            for server in data_servers:
-                for disk in server.disks:
-                    server.restore_disks(disk)
+        for server in data_servers:
+            for disk in server.disks:
+                server.restore_disks(disk)
