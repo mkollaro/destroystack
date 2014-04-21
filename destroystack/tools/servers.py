@@ -55,15 +55,7 @@ class LocalServer(object):
             LOG.info("[%s] %s", self.name, command)
 
         p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE, bufsize=1)
-        if log_output:
-            while p.poll() is None:
-                out = p.stdout.readline()
-                err = p.stderr.readline()
-                if out:
-                    LOG.info("[%s stdout] %s", self.name, out.strip('\n'))
-                if err:
-                    LOG.info("[%s stderr] %s", self.name, err.strip('\n'))
+                             stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
         result = CommandResult(self.name, command)
         result.parse_subprocess_results(stdout, stderr, p.returncode)
