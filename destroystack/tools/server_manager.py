@@ -39,6 +39,7 @@ class ServerManager(object):
         """
         self._config = config
         self._servers = server_tools.create_servers(config['servers'])
+        self._workaround_single_swift_disk()
 
     def servers(self, role=None, roles=None):
         """Generator that gets a server by its parameters.
@@ -164,3 +165,9 @@ class ServerManager(object):
         for server in data_servers:
             for disk in server.disks:
                 server.restore_disk(disk)
+
+    def _workaround_single_swift_disk(self):
+        for server in list(self.servers(role='swift_data')):
+            if len(server.disks) == 1:
+                disk = server.disks[0]
+                server.disks = [disk+"1", disk+"2", disk+"3"]

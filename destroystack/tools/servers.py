@@ -173,7 +173,8 @@ class Server(LocalServer):
         """
         mount_points = dict()
         for disk in self.disks:
-            result = self.cmd("mount|grep '/dev/%s '| awk '{print $3}'" % disk)
+            result = self.cmd("mount|grep '/dev/%s '| awk '{print $3}'" % disk,
+                              log_cmd=False)
             if result.out:
                 mount_points[disk] = result.out[0].strip()
         return mount_points
