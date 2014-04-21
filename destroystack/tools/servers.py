@@ -49,13 +49,32 @@ class LocalServer(object):
     name = 'localhost'
 
     def cmd(self, command, ignore_failures=False, log_cmd=True,
-            log_output=True, **kwargs):
-        """Wrapper around subprocess command for logging purposes."""
+            log_output=True, collect_stdout=True, **kwargs):
+        """Wrapper around subprocess command for logging purposes.
+
+        :param command: any shell command
+        :param ignore_failures: if True, retrun CommandResult which will
+            contain the exit code; if False, raise ServerException
+        :param log_cmd: log info message with format "[localhost] command"
+        :param log_output: if there is some output, log info message with
+            format "[localhost stdout] the_output" and
+            "[localhost stderr] the_error_output"
+        :param collect_stdout: if True, the stdout of the command will be saved
+            into a string in the returned result (and logged if log_output is
+            enabled). If False, it will get printed directly on stdout in
+            real-time and not logged or returned.
+        :param kwargs: append to `subprocess.Popen`
+        :returns: CommandResult
+        """
         if log_cmd:
             LOG.info("[%s] %s", self.name, command)
 
-        p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        if collect_stdout:
+            p = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE, **kwargs)
+        else:
+            p = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE,
+                                 *kwargs)
         stdout, stderr = p.communicate()
         result = CommandResult(self.name, command)
         result.parse_subprocess_results(stdout, stderr, p.returncode)

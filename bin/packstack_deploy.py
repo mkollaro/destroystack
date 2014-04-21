@@ -86,7 +86,8 @@ def deploy_swift_small_setup(main_server):
     _create_packstack_answerfile(main_server, packstack_opt, answerfile)
 
     LOG.info("Running packstack, this may take a while")
-    main_server.cmd("packstack --answer-file=%s" % answerfile, log_output=True)
+    main_server.cmd("packstack --answer-file=%s" % answerfile,
+                    collect_stdout=False)
     _configure_keystone(main_server, config["keystone"])
     _set_swift_mount_check(data_servers)
 
