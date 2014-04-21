@@ -59,7 +59,7 @@ def create_snapshots(tag=''):
         wait_for("Waiting until snapshot '%s' is active" % snapshot.name,
                  lambda x: x.status == 'ACTIVE',
                  lambda: nova.images.get(snapshot_id),
-                 timeout=SNAPSHOT_TIMEOUT)
+                 timeout_sec=SNAPSHOT_TIMEOUT)
 
 
 def restore_snapshots(tag=''):
