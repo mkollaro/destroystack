@@ -273,6 +273,11 @@ class CommandResult(object):
                 % (self._server_name, self._command,
                    self.out, self.err, self.exit_code))
 
+    def __str__(self):
+        return ("[%s] %s\nstdout: %s\nstderr: %s\nexit code: %d"
+                % (self._server_name, self._command,
+                   '\n'.join(self.out), '\n'.join(self.err), self.exit_code))
+
 
 def partition_single_extra_disk(server):
     """Workaround when only one disk is available and we need more
