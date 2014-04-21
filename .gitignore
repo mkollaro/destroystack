@@ -1,6 +1,6 @@
 etc/*.json
-etc/packstack.*.answfile
-destroystack/test_files/
+packstack.*.answfile
+tmp/
 .vagrant/
 
 *.py[cod]
