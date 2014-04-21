@@ -60,9 +60,9 @@ class LocalServer(object):
         result = CommandResult(self.name, command)
         result.parse_subprocess_results(stdout, stderr, p.returncode)
         if log_output and result.out:
-            LOG.info("[%s stdout] %s", result.out)
+            LOG.info("[%s stdout] %s", self.name, result.out)
         if log_output and result.err:
-            LOG.info("[%s stderr] %s", result.err)
+            LOG.info("[%s stderr] %s", self.name, result.err)
         if result.exit_code != 0 and not ignore_failures:
             raise ServerException(result)
         return result
@@ -218,9 +218,9 @@ class SSH(paramiko.SSHClient):
         result.parse_paramiko_results(stdout, stderr)
 
         if log_output and result.out:
-            LOG.info("[%s stdout] %s", result.out)
+            LOG.info("[%s stdout] %s", self.name, result.out)
         if log_output and result.err:
-            LOG.info("[%s stderr] %s", result.err)
+            LOG.info("[%s stderr] %s", self.name, result.err)
         if result.exit_code != 0 and not ignore_failures:
             raise ServerException(result)
         return result
