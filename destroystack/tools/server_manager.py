@@ -163,4 +163,4 @@ class ServerManager(object):
         server_tools.prepare_swift_disks(data_servers)
         for server in data_servers:
             for disk in server.disks:
-                server.restore_disks(disk)
+                server.restore_disk(disk)

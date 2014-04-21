@@ -68,8 +68,8 @@ class LocalServer(object):
         return result
 
     def file_exists(self, filename):
-        check_existing = "[ -f %s ]" % filename
-        if self.cmd(check_existing, ignore_failures=True).exit_code == 0:
+        if self.cmd("[ -f %s ]" % filename,
+                    ignore_failures=True, log_cmd=False).exit_code == 0:
             return True
         else:
             return False
