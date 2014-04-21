@@ -328,7 +328,8 @@ def _needs_partitioning(server):
     devices = set(result.out)
     print devices
     if len(devices) == 1:
-        return devices[0]
+        disk = devices.pop()
+        return disk[len('/dev/'):]
     else:
         LOG.info("Using devices: %s" % devices)
         return None

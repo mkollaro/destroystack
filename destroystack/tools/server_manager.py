@@ -160,7 +160,7 @@ class ServerManager(object):
         user.
         """
         data_servers = list(self.servers(role='swift_data'))
-        server_tools.prepare_swift_disk(data_servers)
+        server_tools.prepare_swift_disks(data_servers)
         if mount:
             for server in data_servers:
                 for disk in server.disks:
