@@ -1,7 +1,8 @@
 etc/*.json
-packstack.*.answfile
+*.answer
 tmp/
 .vagrant/
+.noseids
 
 *.py[cod]
 
