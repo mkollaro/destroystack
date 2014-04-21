@@ -150,20 +150,26 @@ class ServerManager(object):
                             "supported, choose among: %s"
                             % (man_type, MANAGEMENT_TYPES))
 
-    def _single_disk_workaround(self):
-        """Use the partitions of the disk instead of the single disk
+    def _restore_swift_disks(self, mount=False):
+        """These disks might not have been snapshotted.
 
-        If only one disk was given, then the deployment actually partitioned it
-        so that we can have storage devices.
-        TODO: check if the partitions actually exist
+        Since the extra disk is currently maybe not being snapshotted (it is
+        just some ephemeral storage or cinder volume), format them and restore
+        their flags.
+
+        Additionally, if the user provided only one disk, we create 3
+        partitions on it and use them as "disks" to simplify things for the
+        user.
         """
-        for server in self.servers(role='swift_data'):
+        data_servers = list(self.servers(role='swift_data'))
+        for server in data_servers:
             if len(server.disks) == 1:
+                # only single disk was specified, use partitions of it
                 disk = server.disks[0]
                 partitions = [disk+"1", disk+"2", disk+"3"]
                 server.disks = partitions
 
-    def _restore_swift_disks(self):
-        for server in self.servers(role='swift_data'):
-            for disk in server.disks:
-                server.restore_disks(disk)
+        if mount:
+            for server in data_servers:
+                for disk in server.disks:
+                    server.restore_disks(disk)

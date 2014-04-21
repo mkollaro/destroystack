@@ -278,15 +278,13 @@ class CommandResult(object):
                    '\n'.join(self.out), '\n'.join(self.err), self.exit_code))
 
 
-def partition_single_extra_disk(server):
+def partition_single_extra_disk(server, disk):
     """Workaround when only one disk is available and we need more
 
     When only one disk is available and we need 3 for Swift storage, create
     partitions on it and use those as extra "disks". Requires the disk to have
     at least 6GB and will delete everyting on it.
     """
-    assert(len(server.disks) == 1)
-    disk = server.disks[0]
     partition_table = '\n'.join([
         '# partition table of /dev/{0}',
         'unit: sectors',
@@ -308,8 +306,7 @@ def partition_single_extra_disk(server):
         LOG.info('Creating 3 partitions on %s:/dev/%s' % (server.name, disk))
         server.cmd('echo -e \'%s\' > partition_table' % partition_table)
         server.cmd('sfdisk /dev/%s < partition_table' % disk)
-    partitions = [disk+'1', disk+'2', disk+'3']
-    server.disks = partitions
+    return [disk+'1', disk+'2', disk+'3']
 
 
 def _log_output(stdout, stderr):
@@ -326,6 +323,9 @@ def prepare_extra_disks(servers):
     """
     description = list()
     for server in servers:
+        # TODO check if disk is partitioned, i.e. the partitions give in
+        # server.disks exist
+
         if len(server.disks) == 1:
             LOG.info("Only one extra disk on %s, create partitions on it and"
                      " use those instead" % server)
@@ -337,3 +337,25 @@ def prepare_extra_disks(servers):
         devices = ['/'.join([ip, disk]) for disk in server.disks]
         description.extend(devices)
     return description
+
+
+def _needs_partitioning(server):
+    """Check if partitions need to be created on the swift disk.
+
+    For the Swift test, we need 2 data servers with 3 disks each, but for
+    convenience we allow the user to specify a single disk and it will be
+    partitioned into 3 "disks". See if we have to do that.
+
+    If actual disks are given (for example, sdb, sdc, sdd) and they exist,
+    return False, otherwise raise exception.
+
+    If a single disk is given and it doesn't have 3 partitions,
+    return True. If the partitions are given (e.g. sdb1, sdb2,
+    sdb3) and they don't exist yet, return True.
+    """
+    if len(server.disks) >= 3 and number not in diskname:
+        devices = server.cmd('ls /dev/%s*' % disk)
+
+    for disk in server.disks:
+        devices = server.cmd('ls /dev/%s*' % disk)
+
