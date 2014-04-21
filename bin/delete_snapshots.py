@@ -14,6 +14,7 @@
 
 Use this if you have `management.type` set to `metaopenstack` in the
 configuration to get rid of the snapshot images of the servers.
+If only part of them exists, it will delete them anyway and exit successfully.
 """
 
 import logging

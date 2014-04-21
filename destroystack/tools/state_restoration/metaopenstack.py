@@ -32,6 +32,9 @@ CONFIG = common.get_config()
 
 def create_snapshots(tag=''):
     """Create snapshots of OpenStack VMs and wait until they are active.
+
+    It will reuse the snapshots that already exist, and create those that
+    don't. In both cases it will wait until they are all in the active state.
     """
     nova = _get_nova_client()
     vms, ssh_servers = _find_vms(nova)
