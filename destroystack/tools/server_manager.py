@@ -120,7 +120,8 @@ class ServerManager(object):
 
         Will re-create them if called a second time.
         """
-        self._servers = server_tools.create_servers(self._config['servers'])
+        for server in self._servers:
+            server.connect()
 
     def _choose_state_restoration_action(self, action, tag):
         """Choose which function to use, based on "management.type" in config.

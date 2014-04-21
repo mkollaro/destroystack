@@ -83,7 +83,8 @@ class Server(LocalServer):
     """
     def __init__(self, hostname=None, ip=None, username="root", password=None,
                  roles=None, extra_disks=None, **kwargs):
-        assert hostname or ip, "either hostname or IP address required"
+        if not (hostname or ip):
+            raise Exception("Either hostname or IP address required")
         self.hostname = hostname
         if not ip:
             self.ip = gethostbyname(self.hostname)
@@ -95,11 +96,17 @@ class Server(LocalServer):
         if "root_password" in kwargs and not password:
             username = "root"
             password = kwargs["root_password"]
+        self._username = username
+        self._password = password
 
         self._ssh = SSH(self.name)
         self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self._ssh.load_system_host_keys()
-        self._ssh.connect(hostname, username=username, password=password)
+        self.connect()
+
+    def connect(self):
+        self._ssh.connect(self.ip, username=self._username,
+                          password=self._password)
 
     def cmd(self, command, **kwargs):
         return self._ssh(command, **kwargs)
