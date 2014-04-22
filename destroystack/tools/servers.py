@@ -186,12 +186,15 @@ class Server(LocalServer):
             self.cmd("umount /dev/%s" % disk)
 
     def format_disk(self, disk):
-        LOG.info("Formatting disk /dev/%s on %s", disk, self.name)
-        assert disk not in self.get_mounted_disks()
         assert disk in self.disks
+        for disk in self.disks:
+            self.umount(disk)
+        LOG.info("Formatting disk /dev/%s on %s", disk, self.name)
         self.cmd("mkfs.ext4 -F /dev/" + disk, log_output=True)
 
     def format_extra_disks(self):
+        for disk in self.disks:
+            self.umount(disk)
         cmd = ["(mkfs.ext4 -F /dev/%s > /dev/null)&" % d for d in self.disks]
         cmd.append("wait")
         self.cmd(" ".join(cmd), log_output=True)
