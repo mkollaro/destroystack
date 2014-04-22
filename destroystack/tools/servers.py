@@ -152,7 +152,8 @@ class Server(LocalServer):
             returns a non-zero value
         :returns: `CommandResult`
         """
-        return self._ssh(command, **kwargs)
+        return self._ssh(command, ignore_failures, log_cmd, log_output,
+                         **kwargs)
 
     def __str__(self):
         return self.name
