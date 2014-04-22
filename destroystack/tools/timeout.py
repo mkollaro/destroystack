@@ -33,6 +33,7 @@ import datetime
 from nose.tools import TimeExpired
 
 LOG = logging.getLogger(__name__)
+logging.getLogger("iso8601").setLevel(logging.WARNING)
 
 
 def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
