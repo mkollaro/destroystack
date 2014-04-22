@@ -129,6 +129,9 @@ class Server(LocalServer):
         self._ssh.load_system_host_keys()
         self.connect()
 
+    def __del__(self):
+        self._ssh.close()
+
     def connect(self):
         self._ssh.connect(self.ip, username=self._username,
                           password=self._password)
