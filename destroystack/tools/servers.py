@@ -57,7 +57,7 @@ class LocalServer(object):
         `Server.cmd`.
 
         :param command: any shell command
-        :param ignore_failures: if True, retrun CommandResult which will
+        :param ignore_failures: if True, return CommandResult which will
             contain the exit code; if False, raise ServerException
         :param log_cmd: log info message with format "[localhost] command"
         :param log_output: if there is some output, log info message with
@@ -68,7 +68,9 @@ class LocalServer(object):
             enabled). If False, it will get printed directly on stdout in
             real-time and not logged or returned.
         :param kwargs: append to `subprocess.Popen`
-        :returns: CommandResult
+        :raises: ServerException if ignore_failures is False and the command
+            returns a non-zero value
+        :returns: `CommandResult`
         """
         if log_cmd:
             LOG.info("[%s] %s", self.name, command)
@@ -131,7 +133,25 @@ class Server(LocalServer):
         self._ssh.connect(self.ip, username=self._username,
                           password=self._password)
 
-    def cmd(self, command, **kwargs):
+    def cmd(self, command, ignore_failures=False,
+            log_cmd=True, log_output=False, **kwargs):
+        """Execute shell command on remote server
+
+        Wrapper around `paramiko.exec_command`. It should have more or less the
+        same options as `LocalServer.cmd`.
+
+        :param command: any shell command
+        :param ignore_failures: if True, return CommandResult which will
+            contain the exit code; if False, raise ServerException
+        :param log_cmd: log info message with format "[hostname] command"
+        :param log_output: if there is some output, log info message with
+            format "[hostname stdout] the_output" and
+            "[hostname stderr] the_error_output"
+        :param kwargs: append to `paramiko.exec_command`
+        :raises: ServerException if ignore_failures is False and the command
+            returns a non-zero value
+        :returns: `CommandResult`
+        """
         return self._ssh(command, **kwargs)
 
     def __str__(self):
@@ -224,14 +244,16 @@ class Server(LocalServer):
 
 
 class SSH(paramiko.SSHClient):
-    """Wrapper around paramiko for better error handling and logging."""
+    """Wrapper around paramiko for better error handling and logging.
 
+    Do not create it directly - it is used by the `Server` object.
+    """
     def __init__(self, name):
         super(SSH, self).__init__()
         self.name = name
 
-    def __call__(self, command, ignore_failures=False,
-                 log_cmd=True, log_output=False, **kwargs):
+    def __call__(self, command, ignore_failures,
+                 log_cmd, log_output, **kwargs):
         """ Similar to exec_command, but checks for errors.
 
         If an error occurs, it logs the command, stdout and stderr.
