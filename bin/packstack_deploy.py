@@ -20,6 +20,7 @@ from destroystack.tools.server_manager import ServerManager
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
+logging.getLogger("paramiko").setLevel(logging.WARNING)
 
 # packages that will be checked for on local host
 REQUIRED_PACKAGES = ['openstack-packstack', 'openstack-utils',

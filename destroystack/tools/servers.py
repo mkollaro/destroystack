@@ -168,12 +168,12 @@ class Server(LocalServer):
         LOG.info("Formatting disk /dev/%s on %s", disk, self.name)
         assert disk not in self.get_mounted_disks()
         assert disk in self.disks
-        self.cmd("mkfs.ext4 -F /dev/" + disk)
+        self.cmd("mkfs.ext4 -F /dev/" + disk, log_output=True)
 
     def format_extra_disks(self):
         cmd = ["(mkfs.ext4 -F /dev/%s > /dev/null)&" % d for d in self.disks]
         cmd.append("wait")
-        self.cmd(" ".join(cmd))
+        self.cmd(" ".join(cmd), log_output=True)
 
     def restore_disk(self, disk):
         """ Mount disk, restore permissions and SELinux contexts.
@@ -345,10 +345,10 @@ def _needs_partitioning(server):
     return "sdb1" as the disk to be partitioned. If there are enough existing
     disks/partitions, return None.
     """
-    disks_description = ' '.join(['/dev/%s*' % disk.strip('123456789')
-                                  for disk in server.disks])
+    disks_description = set(['/dev/%s*' % disk.strip('123456789')
+                             for disk in server.disks])
     print disks_description
-    result = server.cmd('ls %s' % disks_description)
+    result = server.cmd('ls %s' % ' '.join(disks_description), log_output=True)
     devices = set(result.out)
     print devices
     if len(devices) == 1:
