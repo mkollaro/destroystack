@@ -38,8 +38,11 @@ import destroystack.tools.servers as servers
 
 LOG = logging.getLogger(__name__)
 
+# where the openstack service files will be backed up on the remote servers
+BACKUP_DIR = '~/state_backup'
 
-def create_backup(server_manager):
+
+def create_backup(server_manager, overwrite_old=False):
     """Create backup of configuration and files that keep state.
 
     Only Swift is supported so far.
@@ -54,21 +57,24 @@ def create_backup(server_manager):
     LOG.info("Saving Swift state")
     try:
         stop_swift_services(swift_proxy_servers, swift_data_servers)
-        for server in swift_proxy_servers:
-            server.cmd("""
-                rm -fr /root/swift-backup/etc &&
-                mkdir -p /root/swift-backup/etc &&
-                cd /etc/swift &&
-                cp -rp *.builder *.ring.gz /root/swift-backup/etc/""")
-        for server in swift_data_servers:
-            server.cmd("rm -fr /root/swift-backup/{devices,cache}")
-            server.cmd("mkdir -p /root/swift-backup/{devices,cache}")
-            server.cmd(
-                "cp -p /var/cache/swift/* /root/swift-backup/cache/",
-                ignore_failures=True)
-            for device in server.get_mount_points().values():
-                server.cmd("cp -rp %s /root/swift-backup/devices/"
-                           % device)
+        for server in server_manager.servers():
+            if not overwrite_old and server.file_exists(BACKUP_DIR):
+                LOG.info("[%s] Reusing older manual backup", server.name)
+                continue
+            server.cmd("rm -fr %s" % BACKUP_DIR, ignore_failures=True)
+            if 'swift_proxy' in server.roles:
+                server.cmd("""
+                    mkdir -p {0}/swift/etc &&
+                    cd /etc/swift && cp -rpi *.builder *.ring.gz {0}/swift/etc/
+                    """.format(BACKUP_DIR))
+            if 'swift_data' in server.roles:
+                server.cmd("mkdir -p %s/swift/{devices,cache}" % BACKUP_DIR)
+                server.cmd(
+                    "cp -pi /var/cache/swift/* %s/swift/cache/" % BACKUP_DIR,
+                    ignore_failures=True)
+                for device in server.get_mount_points().values():
+                    server.cmd("cp -rp %s %s/swift/devices/"
+                               % (device, BACKUP_DIR))
     finally:
         start_swift_services(swift_proxy_servers, swift_data_servers)
 
@@ -85,19 +91,20 @@ def restore_backup(server_manager):
     swift_data_servers = list(server_manager.servers(role='swift_data'))
     try:
         stop_swift_services(swift_proxy_servers, swift_data_servers)
-        for server in swift_proxy_servers:
-            server.cmd("""
-                service rsyslog restart && service memcached restart &&
-                cd /etc/swift &&
-                rm -fr *.builder *.ring.gz backups """)
-        for server in swift_data_servers:
-            server.cmd("rm -f /var/cache/swift/*.recon")
-            for disk in server.disks:
-                server.umount(disk)
-            server.cmd("rm -fr /srv/node/device*/*")
-            for disk in server.disks:
-                server.cmd("mkfs.ext4 /dev/%s && mount /dev/%s"
-                           % (disk, disk))
+        for server in server_manager.servers():
+            if 'swift_proxy' in server.roles:
+                server.cmd("""
+                    service rsyslog restart && service memcached restart &&
+                    cd /etc/swift &&
+                    rm -fr *.builder *.ring.gz backups """)
+            if 'swift_data' in server.roles:
+                server.cmd("rm -f /var/cache/swift/*.recon")
+                for disk in server.disks:
+                    server.umount(disk)
+                server.cmd("rm -fr /srv/node/device*/*")
+                for disk in server.disks:
+                    server.cmd("mkfs.ext4 /dev/%s && mount /dev/%s"
+                               % (disk, disk))
     finally:
         _restore_backup_files(server_manager)
 
@@ -115,15 +122,15 @@ def _restore_backup_files(server_manager):
     try:
         stop_swift_services(swift_proxy_servers, swift_data_servers)
         for server in swift_proxy_servers:
-            server.cmd("cp -rp /root/swift-backup/etc/* /etc/swift/ ")
+            server.cmd("cp -rp %s/swift/etc/* /etc/swift/ " % BACKUP_DIR)
         for server in swift_data_servers:
             for _ in server.get_mount_points().values():
                 server.cmd(
-                    "cp -rp /root/swift-backup/devices/* /srv/node/")
+                    "cp -rp %s/swift/devices/* /srv/node/" % BACKUP_DIR)
             server.cmd("chown -R swift:swift /srv/node/*")
             server.cmd("restorecon -R /srv/*")
             server.cmd(
-                "cp -rp /root/swift-backup/cache/* /var/cache/swift/",
+                "cp -rp %s/swift/cache/* /var/cache/swift/" % BACKUP_DIR,
                 ignore_failures=True)
     finally:
         start_swift_services(swift_proxy_servers, swift_data_servers)
@@ -158,6 +165,6 @@ def restart_swift_services(proxy_servers, data_servers):
 
 
 def get_running_swift_services(server):
-    output = server.cmd("swift-init all status", ignore_failure=True).out
+    output = server.cmd("swift-init all status", ignore_failures=True).out
     return [line.split()[0] for line in output
             if not line.startswith("No ")]
