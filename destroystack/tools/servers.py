@@ -50,7 +50,11 @@ class LocalServer(object):
 
     def cmd(self, command, ignore_failures=False, log_cmd=True,
             log_output=True, collect_stdout=True, **kwargs):
-        """Wrapper around subprocess command for logging purposes.
+        """Execute shell command on localhost.
+
+        Wrapper around subprocess' `Popen` and `communicate` for logging and
+        clarity. It should have more or less the same options as when using
+        `Server.cmd`.
 
         :param command: any shell command
         :param ignore_failures: if True, retrun CommandResult which will
