@@ -75,6 +75,8 @@ def create_backup(server_manager, overwrite_old=False):
                 for device in server.get_mount_points().values():
                     server.cmd("cp -rp %s %s/swift/devices/"
                                % (device, BACKUP_DIR))
+            LOG.debug("Contents of backup directory:\n%s",
+                      server.cmd("find %s" % BACKUP_DIR, ignore_failures=True))
     finally:
         start_swift_services(swift_proxy_servers, swift_data_servers)
 
