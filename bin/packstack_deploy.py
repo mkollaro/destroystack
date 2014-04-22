@@ -22,7 +22,8 @@ logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
 # packages that will be checked for on local host
-REQUIRED_PACKAGES = ['openstack-packstack', 'openstack-utils']
+REQUIRED_PACKAGES = ['openstack-packstack', 'openstack-utils',
+                     'python-novaclient']
 
 PACKSTACK_DEFAULT_OPTIONS = {
     "CONFIG_GLANCE_INSTALL":            "n",
