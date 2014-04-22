@@ -132,7 +132,7 @@ def _restore_backup_files(server_manager):
 def stop_swift_services(proxy_servers, data_servers):
     for server in proxy_servers + data_servers:
         try:
-            server.cmd("swift-init all stop", log_error=False)
+            server.cmd("swift-init all stop", log_output=False)
         except servers.ServerException:
             # 'swift-init all stop' returns non-zero if the services are
             # already stopped, so check if this is the case
