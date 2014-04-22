@@ -396,8 +396,8 @@ def _partition_swift_disk(server, disk):
         '/dev/{0}3 : start=  8390592, size=  4192272, Id=83',
         '/dev/{0}4 : start=        0, size=        0, Id= 0'
     ]).format(disk)
-    server.umount(disk)
     LOG.info('Creating 3 partitions on %s:/dev/%s' % (server.name, disk))
+    server.cmd('umount /dev/%s' % disk, ignore_failures=True)
     server.cmd('echo -e \'%s\' > partition_table' % partition_table)
     server.cmd('sfdisk /dev/%s < partition_table' % disk)
     server.cmd('partx -a /dev/%s' % disk)
