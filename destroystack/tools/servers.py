@@ -378,3 +378,4 @@ def _partition_swift_disk(server, disk):
     LOG.info('Creating 3 partitions on %s:/dev/%s' % (server.name, disk))
     server.cmd('echo -e \'%s\' > partition_table' % partition_table)
     server.cmd('sfdisk /dev/%s < partition_table' % disk)
+    server.cmd('partx -a /dev/%s' % disk)
