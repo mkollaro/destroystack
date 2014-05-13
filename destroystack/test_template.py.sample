@@ -20,19 +20,15 @@
 First, copy this file and rename it to `test_<my_setup_name>.py`, for example
 `test_big_ha_neutron_setup.py`. This is beacause each test module is meant for
 a different topology - if the topology you need is already in some module, you
-can just edit that module. Replace the constant `SETUP_NAME` with your actual
-setup name.
+can just edit that module.
 
-You should edit `bin/generate_config_files.py` and add your setup there, so it
-would generate the file `bin/config.<my_setup_name>.json`. Ideally, you should
-also provide some script or a link to a script that can deploy this setup, so
-that other people can use it.
+Ideally, you should also provide some script or a link to a script that can
+deploy this setup, so that other people can use it.
 """
 
 from destroystack.tools.server_manager import ServerManager
 import destroystack.tools.common as common
 
-SETUP_NAME = "my_setup_name"
 manager = None
 
 
@@ -40,8 +36,8 @@ def setup_module():
     global manager
     # each setup, i.e. topology, has its own configuration file which tells it
     # what services are running on which machines and how to access them
-    setup_config = common.get_config("config.%s.json" % SETUP_NAME)
-    manager = ServerManager(setup_config)
+    config = common.get_config()
+    manager = ServerManager(config)
     # if enabled in the configuration, create a snapshot of the machines, or
     # try backing up the files if the management is set to manual (not
     # recommended, it's only best-effort)

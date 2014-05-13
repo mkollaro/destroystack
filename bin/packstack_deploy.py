@@ -69,7 +69,7 @@ def deploy_swift_small_setup(main_server):
     """
     setup_name = 'swift_small_setup'
     answerfile = "packstack." + setup_name + ".answer"
-    config = common.get_config("config." + setup_name + ".json")
+    config = common.get_config()
     manager = ServerManager(config)
 
     keystone = manager.get(role='keystone')

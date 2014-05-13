@@ -29,10 +29,10 @@ swift = None
 def setup_module():
     global manager
     global swift
-    setup_config = common.get_config("config.%s.json" % SETUP_NAME)
-    manager = ServerManager(setup_config)
+    config = common.get_config()
+    manager = ServerManager(config)
     manager.save_state()
-    swift = Swift(setup_config, manager.get(role='swift_proxy'))
+    swift = Swift(config, manager.get(role='swift_proxy'))
 
 
 def teardown_module():
