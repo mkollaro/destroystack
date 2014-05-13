@@ -359,8 +359,7 @@ def prepare_swift_disks(servers):
         LOG.info("Formatting extra disks on %s" % server)
         server.format_extra_disks()
         # get description of devices for packstack answerfile
-        ip = gethostbyname(server.hostname)
-        devices = ['/'.join([ip, disk]) for disk in server.disks]
+        devices = ['/'.join([server.ip, disk]) for disk in server.disks]
         description.extend(devices)
     return description
 
