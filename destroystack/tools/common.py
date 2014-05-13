@@ -72,8 +72,10 @@ def get_keystone_auth():
     for server in config['servers']:
         if 'keystone' in server['roles']:
             keystone_server = server
-    auth_url = 'http://%s:5000/v2.0/' % keystone_server
-    print (auth_url, user, tenant, password)
+    host = keystone_server.get('hostname', None)
+    if not host:
+        host = keystone_server['ip']
+    auth_url = 'http://%s:5000/v2.0/' % host
     return (auth_url, user, tenant, password)
 
 
