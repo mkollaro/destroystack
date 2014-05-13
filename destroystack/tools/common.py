@@ -51,6 +51,32 @@ def get_timeout():
     return get_config()["timeout"]
 
 
+def get_keystone_auth():
+    """Get the keystone authentication info from the configuration file.
+
+    The auth_url for keystone will be found out from the servers (it will
+    search for a server that has the 'keystone' role). If the keystone username
+    is not provided, it will be 'admin'. If the tenant is not provided, it will
+    be the same as the user name. The password is required in the
+    configuration.
+
+    :returns: (auth_url, user, tenant, password)
+    """
+    config = get_config()
+    user = config['keystone'].get('user', 'admin')
+    tenant = config['keystone'].get('tenant', user)
+    password = config['keystone']['password']
+
+    # find out the auth_url
+    keystone_server = None
+    for server in config['servers']:
+        if 'keystone' in server['roles']:
+            keystone_server = server
+    auth_url = 'http://%s:5000/v2.0/' % keystone_server
+    print (auth_url, user, tenant, password)
+    return (auth_url, user, tenant, password)
+
+
 def get_option_parser():
     parser = OptionParser()
     parser.add_option("-s", "--setup", dest="setup",

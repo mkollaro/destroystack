@@ -38,12 +38,9 @@ class Swift(swiftclient.client.Connection):
         run Swift administration commands
     """
     def __init__(self, config, proxy_server):
-        super(Swift, self).__init__(
-            config['keystone']['auth_url'],
-            config['keystone']['user'],
-            config['keystone']['password'],
-            auth_version='2',
-            tenant_name=config['keystone']['user'])
+        auth_url, user, tenant, password = common.get_keystone_auth()
+        super(Swift, self).__init__(auth_url, user, password,
+                                    auth_version='2', tenant_name=tenant)
         self.proxy_server = proxy_server
 
     def replicas_are_ok(self, count=3, check_nodes=None, exact=False):
