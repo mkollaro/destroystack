@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "properties": {
+    "timeout": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "in seconds; used to time-out tests and ssh commands"
+    },
+    "keystone": {
+      "description": "authentication to the tested system APIs",
+      "type": "object",
+      "properties": {
+        "user": {
+          "type": "string",
+          "optional": true,
+          "default": "admin"
+        },
+        "tenant": {
+          "description": "by default, the same as 'user'",
+          "type": "string",
+          "optional": true
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "management": {
+        "type": "object",
+        "description": "how state restoration is done",
+        "properties": {
+            "type": {
+                "type": "string",
+                "enum": [ "none", "manual", "metaopenstack", "vagrant"]
+            }
+        }
+    }
+  }
+}

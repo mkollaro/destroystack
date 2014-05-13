@@ -1,5 +1,4 @@
-etc/*.json
-*.answer
+etc/config.json
 tmp/
 .vagrant/
 .noseids
