@@ -1,16 +1,19 @@
 {
-    "timeout": 180,
+    "timeout": 360,
     "servers": [
         {
-        "hostname": "SERVER1.COM"
+        "ip": "192.168.33.11"
+        "roles": ["swift_proxy", "keystone"]
         },
         {
-        "hostname": "SERVER2.COM",
+        "ip": "192.168.33.22",
         "extra_disks": ["vdb", "vdc", "vdd"]
+        "roles": ["swift_data"]
         },
         {
-        "hostname": "SERVER3.COM",
+        "ip": "192.168.33.33",
         "extra_disks": ["vdb", "vdc", "vdd"]
+        "roles": ["swift_data"]
         }
     ],
     "keystone": {
