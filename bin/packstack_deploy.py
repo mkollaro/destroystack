@@ -35,6 +35,7 @@ PACKSTACK_DEFAULT_OPTIONS = {
     "CONFIG_HORIZON_INSTALL":           "n",
     "CONFIG_SWIFT_INSTALL":             "n",
     "CONFIG_CEILOMETER_INSTALL":        "n",
+    "CONFIG_NAGIOS_INSTALL":            "n",
     "CONFIG_CLIENT_INSTALL":            "y",
     "CONFIG_SWIFT_STORAGE_ZONES":       "1",
     "CONFIG_SWIFT_STORAGE_REPLICAS":    "3",
