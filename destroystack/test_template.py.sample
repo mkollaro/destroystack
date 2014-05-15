@@ -18,54 +18,64 @@
 """This a template for a new test set that explains how to create new tests.
 
 First, copy this file and rename it to `test_<my_setup_name>.py`, for example
-`test_big_ha_neutron_setup.py`. This is beacause each test module is meant for
-a different topology - if the topology you need is already in some module, you
-can just edit that module.
+`test_big_ha_neutron_setup.py`. This is because the tests are approximately
+grouped by what topology they need. The requirements for this group of tests to
+be run is specified in the `requirements` function - if they are not fulfilled,
+the tests will be skipped. Ideally, you should also provide some way to deploy
+a setup that fulfills them, so that other people can use it.
 
-Ideally, you should also provide some script or a link to a script that can
-deploy this setup, so that other people can use it.
+In the beginning, the save of all the servers will be saved (old backups or
+snapshots will be reused by default). A file will be created on one of the
+servers in the setup. There is a basic example test that tries if the file
+exists. After the test finishes, the state will be restored and so the file
+won't be there anymore.
 """
 
+from nose import SkipTest
 from destroystack.tools.server_manager import ServerManager
 import destroystack.tools.common as common
 
-manager = None
 
+def requirements(manager):
+    """Specify requirements for this group of tests to run.
 
-def setup_module():
-    global manager
-    # each setup, i.e. topology, has its own configuration file which tells it
-    # what services are running on which machines and how to access them
-    config = common.get_config()
-    manager = ServerManager(config)
-    # if enabled in the configuration, create a snapshot of the machines, or
-    # try backing up the files if the management is set to manual (not
-    # recommended, it's only best-effort)
-    manager.save_state()
-
-
-def teardown_module():
-    pass
+    Return True if the requirements are fulfilled. You can add any kind of
+    condition on it. As it is, it only requires that there is at least one
+    keystone server.
+    """
+    return (manager.get(role='keystone') is not None)
 
 
 class TestMySetupName():
+    manager = None
+
+    @classmethod
+    def setupClass(cls):
+        config = common.get_config()
+        cls.manager = ServerManager(config)
+        if not requirements(cls.manager):
+            raise SkipTest
+        # if enabled in the configuration, create a snapshot of the machines,
+        # or try backing up the files if the management is set to manual (not
+        # recommended, it's only best-effort)
+        cls.manager.save_state()
+
     def setUp(self):
         # stuff that will be done for each test
         # you can select any server from the server manager, in this case it
         # selects a random compute node
-        self.server = manager.get(role='compute')
-        # command exacuted in the shell as root
-        self.server.ssh('touch some_file')
+        self.server = self.manager.get(role='keystone')
+        # command executed in the shell as root
+        self.server.cmd('touch some_file')
 
     def tearDown(self):
         # restore the snapshot if snapshotting is enabled in the
         # configuration, or restore the backed up files if the management is
         # set to manual. This will make sure that if one test destroys the
         # setup, another test can run with the same environment.
-        manager.load_state()
+        self.manager.load_state()
 
-    def test_reboot(self):
-        self.server.reboot()
+    def test_file(self):
         # you can run any command on any of the servers as root
-        output = self.server.ssh('ls')
-        assert 'some_file' in output
+        result = self.server.cmd('ls')
+        assert 'some_file' in result.out
