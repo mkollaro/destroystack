@@ -48,7 +48,7 @@ class TestSwiftSmallSetup():
         if not requirements(cls.manager):
             raise SkipTest
         cls.manager.save_state()
-        cls.swift = Swift(config, cls.manager.get(role='swift_proxy'))
+        cls.swift = Swift(cls.manager)
 
     def setUp(self):
         self.data_servers = self.manager.get_all(role='swift_data')

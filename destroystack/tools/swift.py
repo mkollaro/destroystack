@@ -32,16 +32,17 @@ swiftclient.client.logger.setLevel(logging.INFO)
 class Swift(swiftclient.client.Connection):
     """Swift client and extra functionality
 
-    :param config: dictionary created by "bin/generate_config_files.py", needs
-        a "keystone" item with "auth_url", "user" and "password"
-    :param proxy_server: Server object of the Swift proxy node, allowing it to
-        run Swift administration commands
+    :param server_manager: a ServerManager object, the class uses it to access
+        the Swift servers and perform administrative operations; if it doesn't
+        contain and servers with the roles 'swift_proxy' or 'swift_data', these
+        extra function won't work
     """
-    def __init__(self, config, proxy_server):
+    def __init__(self, server_manager):
         auth_url, user, tenant, password = common.get_keystone_auth()
         super(Swift, self).__init__(auth_url, user, password,
                                     auth_version='2', tenant_name=tenant)
-        self.proxy_server = proxy_server
+        self.manager = server_manager
+        self.proxy_server = self.manager.get(role='swift_proxy')
 
     def replicas_are_ok(self, count=3, check_nodes=None, exact=False):
         """Check if all objects and containers have enough replicas.
