@@ -406,4 +406,3 @@ def _partition_swift_disk(server, disk):
     server.cmd('umount /dev/%s' % disk, ignore_failures=True)
     server.cmd('echo -e \'%s\' > partition_table' % partition_table)
     server.cmd('sfdisk /dev/%s < partition_table' % disk)
-    server.cmd('partx -a /dev/%s' % disk)
