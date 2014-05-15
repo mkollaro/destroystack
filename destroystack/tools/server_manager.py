@@ -76,6 +76,10 @@ class ServerManager(object):
         except StopIteration:
             return None
 
+    def get_all(self, role=None, roles=None):
+        """Same as `get`, but returns a list of all the matching servers"""
+        return list(self.servers(role, roles))
+
     def save_state(self, tag=''):
         """Create a snapshot of all the servers
 

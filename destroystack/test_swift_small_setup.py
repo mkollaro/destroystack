@@ -15,79 +15,86 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from itertools import chain
+from nose import SkipTest
+
 from destroystack.tools.server_manager import ServerManager
 from destroystack.tools.swift import Swift
 import destroystack.tools.common as common
 
-SETUP_NAME = "swift_small_setup"
 REPLICA_COUNT = 3
 
-manager = None
-swift = None
 
+def requirements(manager):
+    """Specify requirements for this group of tests to run.
 
-def setup_module():
-    global manager
-    global swift
-    config = common.get_config()
-    manager = ServerManager(config)
-    manager.save_state()
-    swift = Swift(config, manager.get(role='swift_proxy'))
-
-
-def teardown_module():
-    pass
+    Return True if at least 2 Swift data servers are present, with at least 6
+    disks in total.
+    """
+    swift_data = manager.get_all(role='swift_data')
+    all_disks = list(chain.from_iterable(
+                     [server.disks for server in swift_data]))
+    return (len(swift_data) >= 2 and len(all_disks) >= 6)
 
 
 class TestSwiftSmallSetup():
+    swift = None
+    manager = None
+
+    @classmethod
+    def setupClass(cls):
+        config = common.get_config()
+        cls.manager = ServerManager(config)
+        if not requirements(cls.manager):
+            raise SkipTest
+        cls.manager.save_state()
+        cls.swift = Swift(config, cls.manager.get(role='swift_proxy'))
+
     def setUp(self):
-        self.data_servers = list(manager.servers(role='swift_data'))
-        if len(self.data_servers) < 2:
-            raise Exception("You need at least 2 Swfit data servers for the"
-                            " '%s' tests" % SETUP_NAME)
-        common.populate_swift_with_random_files(swift)
+        self.data_servers = self.manager.get_all(role='swift_data')
+        common.populate_swift_with_random_files(self.swift)
         # make sure all replicas are distributed before we start killing disks
-        swift.wait_for_replica_regeneration()
+        self.swift.wait_for_replica_regeneration()
 
     def tearDown(self):
-        manager.load_state()
+        self.manager.load_state()
 
     def test_one_disk_down(self):
         self.data_servers[0].kill_disk()
-        swift.wait_for_replica_regeneration()
+        self.swift.wait_for_replica_regeneration()
 
     def test_two_disks_down(self):
         self.data_servers[0].kill_disk()
         self.data_servers[1].kill_disk()
-        swift.wait_for_replica_regeneration()
+        self.swift.wait_for_replica_regeneration()
 
     def test_one_disk_down_restore(self):
         # kill disk, restore it with all files intact
 
         disk = self.data_servers[0].kill_disk()
-        swift.wait_for_replica_regeneration()
+        self.swift.wait_for_replica_regeneration()
         self.data_servers[0].restore_disk(disk)
         # replicas should be on the first 3 nodes (primarily nodes)
-        swift.wait_for_replica_regeneration(check_nodes=REPLICA_COUNT)
+        self.swift.wait_for_replica_regeneration(check_nodes=REPLICA_COUNT)
         # wait until the replicas on handoff nodes get deleted
-        swift.wait_for_replica_regeneration(exact=True)
+        self.swift.wait_for_replica_regeneration(exact=True)
 
     def test_disk_replacement(self):
         # similar to 'test_one_disk_down_restore', but formats the disk
 
         disk = self.data_servers[0].kill_disk()
-        swift.wait_for_replica_regeneration()
+        self.swift.wait_for_replica_regeneration()
         # the disk died, let's replace it with a new empty one
         self.data_servers[0].format_disk(disk)
         self.data_servers[0].restore_disk(disk)
         # replicas should be on the first 3 nodes (primarily nodes)
-        swift.wait_for_replica_regeneration(check_nodes=REPLICA_COUNT)
+        self.swift.wait_for_replica_regeneration(check_nodes=REPLICA_COUNT)
         # wait until the replicas on handoff nodes get deleted
-        swift.wait_for_replica_regeneration(exact=True)
+        self.swift.wait_for_replica_regeneration(exact=True)
 
     def test_two_disks_down_third_later(self):
         self.data_servers[0].kill_disk()
         self.data_servers[1].kill_disk()
-        swift.wait_for_replica_regeneration()
+        self.swift.wait_for_replica_regeneration()
         self.data_servers[0].kill_disk()
-        swift.wait_for_replica_regeneration()
+        self.swift.wait_for_replica_regeneration()
