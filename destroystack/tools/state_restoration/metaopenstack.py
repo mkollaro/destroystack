@@ -112,7 +112,10 @@ def _find_snapshot(novaclient, snapshot_name):
 
 
 def _get_nova_client():
-    auth_url, user, tenant, password = common.get_keystone_auth()
+    user = CONFIG['management']['user']
+    tenant = CONFIG['management']['tenant']
+    auth_url = CONFIG['management']['auth_url']
+    password = CONFIG['management']['password']
     nova = client.Client('1.1', user, password, tenant, auth_url,
                          service_type="compute")
     return nova

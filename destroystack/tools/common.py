@@ -70,8 +70,10 @@ def get_keystone_auth():
     # find out the auth_url
     keystone_server = None
     for server in config['servers']:
-        if 'keystone' in server['roles']:
+        if 'roles' in server and 'keystone' in server['roles']:
             keystone_server = server
+    if not keystone_server:
+        raise Exception("No server with 'keystone' role found")
     host = keystone_server.get('hostname', None)
     if not host:
         host = keystone_server['ip']
