@@ -21,6 +21,8 @@ import time
 import itertools
 from novaclient import client
 from novaclient import exceptions
+from socket import gethostbyname
+
 from destroystack.tools.timeout import wait_for
 from destroystack.tools.servers import Server as SshServer
 import destroystack.tools.common as common
@@ -142,7 +144,10 @@ def _find_vms(novaclient):
         if 'id' in server:
             vm = novaclient.servers.get(server['id'])
         else:
-            vm = _find_vm_by_ip(novaclient, server['hostname'])
+            ip = server.get('ip', None)
+            if not ip:
+                ip = gethostbyname(server['hostname'])
+            vm = _find_vm_by_ip(novaclient, ip)
 
         if vm is None:
             raise exceptions.NotFound("Couldn't find server:\n %s" % server)
