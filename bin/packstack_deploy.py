@@ -11,7 +11,6 @@
 # limitations under the License.
 
 from copy import copy
-import sys
 import logging
 
 import destroystack.tools.common as common
@@ -49,18 +48,10 @@ PACKSTACK_DEFAULT_OPTIONS = {
 
 
 def main():
-    option_parser = common.get_option_parser()
-    options, _ = option_parser.parse_args()
-
     server = server_tools.LocalServer()
     install_packages(server, REQUIRED_PACKAGES)
 
-    # TODO: cycle trough common.SUPPORTED_SETUPS and get the func by name
-    if options.setup == "swift_small_setup":
-        deploy_swift_small_setup(server)
-    else:
-        print "Unimplemented setup " + options.setup
-        sys.exit(1)
+    deploy_swift_small_setup(server)
 
 
 def deploy_swift_small_setup(main_server):

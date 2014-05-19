@@ -20,7 +20,6 @@ import json
 import random
 import string
 import logging
-from optparse import OptionParser
 
 PROJ_DIR = os.path.join(os.path.dirname(__file__), "..", "..")
 PROJ_DIR = os.path.normpath(PROJ_DIR)
@@ -79,14 +78,6 @@ def get_keystone_auth():
         host = keystone_server['ip']
     auth_url = 'http://%s:5000/v2.0/' % host
     return (auth_url, user, tenant, password)
-
-
-def get_option_parser():
-    parser = OptionParser()
-    parser.add_option("-s", "--setup", dest="setup",
-                      help="Which OpenStack setup to deploy. "
-                           "Supported are: %s" % SUPPORTED_SETUPS)
-    return parser
 
 
 def upload_files(swift, container, filename_list):
