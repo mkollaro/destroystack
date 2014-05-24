@@ -1,0 +1,29 @@
+{
+    "timeout": 360,
+    "servers": [
+        {
+        "ip": "192.168.33.11",
+        "root_password": "123456",
+        "roles": ["swift_proxy", "keystone"]
+        },
+        {
+        "ip": "192.168.33.22",
+        "root_password": "123456",
+        "extra_disks": ["vdb", "vdc", "vdd"],
+        "roles": ["swift_data"]
+        },
+        {
+        "ip": "192.168.33.33",
+        "root_password": "123456",
+        "extra_disks": ["vdb", "vdc", "vdd"],
+        "roles": ["swift_data"]
+        }
+    ],
+    "keystone": {
+        "user": "admin",
+        "password": "123456"
+    },
+    "management": {
+        "type": "vagrant"
+    }
+}

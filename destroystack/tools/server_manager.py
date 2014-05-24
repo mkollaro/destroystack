@@ -17,6 +17,7 @@
 
 import logging
 import destroystack.tools.state_restoration.metaopenstack as metaopenstack
+import destroystack.tools.state_restoration.vagrant as vagrant
 import destroystack.tools.state_restoration.manual as manual_restoration
 import destroystack.tools.servers as server_tools
 
@@ -140,7 +141,10 @@ class ServerManager(object):
             else:
                 metaopenstack.restore_snapshots(tag)
         elif man_type == 'vagrant':
-            raise NotImplementedError("vagrant snapshots unavailable")
+            if action == 'save':
+                vagrant.create_snapshots(tag)
+            else:
+                vagrant.restore_snapshots(tag)
         elif man_type == 'manual':
             if action == 'save':
                 manual_restoration.create_backup(self)

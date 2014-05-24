@@ -10,7 +10,7 @@ be:
     * manual
     * none
     * openstack
-    * vagrant (not implemented)
+    * vagrant
     * vagrant-libvirt (not implemented)
     * lvm (not implemented)
 
