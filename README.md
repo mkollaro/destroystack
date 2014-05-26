@@ -56,10 +56,14 @@ tests themselves take a while to run.
 5. boot up the VirtualBox VMs
 
         $ vagrant up
-6. deploy the demonstration OpenStack system
+6. copy the configuration file (you don't have to edit it)
 
-        $ bin/deploy_demo
-7. run tests
+        $ cp etc/config.json.vagrant.sample etc/config.json
+7. copy the OpenStack RPM repository to the VMs if necessary
+8. deploy the system using Packstack (but you can use a different tool)
+
+        $ python bin/packstack_deploy.py
+9. run tests
 
         $ nosetests
 
@@ -78,37 +82,33 @@ To remove the VMs and extra files, run
 ## Running the tested system inside OpenStack VMs
 
 If you have a production instance of OpenStack (let us call it meta-OpenStack)
-where you can manage VMs, you can install OpenStack on them (therefore, run
-OpenStack inside OpenStack). You will give the tests access to the meta
-OpenStack API and IDs of the VMs, so that it can snapshot them between tests.
-First, create 3 VMs and either use the ephemeral flavor or add a cinder disk.
-You can try using [khaleesi](https://github.com/redhat-openstack/khaleesi) for
-this purpose.
+where you can manage VMs, you can install the tested system on them -
+run OpenStack inside OpenStack.
+The steps you need to take are similar to the steps used with VirtualBox,
+except in step 5 you need to create the virtual machines yourself. For
+the basic set of Swift tests, create three VMs and either use the ephemeral
+flavor or add a Cinder disk. You can try using the
+[Khaleesi](https://github.com/redhat-openstack/khaleesi) project for this
+purpose.
+Another difference is the configuration file, in which you will need to
+give the tests access to the meta OpenStack API and edit the IP addresses
+of the servers.
 
-    $ sudo pip install -e --user destroystack/
-    $ cd destroystack
     $ cp etc/config.json.openstack.sample etc/config.json
 
-Configure the `management` section to point to your meta-OpenStack system
-endpoint, user name and password. If your meta-OpenStack uses unique IPs for
-the VMs, you can just put those in configuration, but if not you need to
-provide the IDs of the VMs under the `id` field.  Change the disk names in case
-they are called differently than `/dev/{vdb,vdc,vdd}`. Don't put your main disk
-in here! They will all be formatted. The services password is what will be set
-in the answer files for keystone and other things, you don't need to change it.
-The timeout is in seconds and tells the tests how long to wait for stuff like
-replica regeneration before failing the tests.
-
-    $ python bin/generate_config_files.py
-
-If you chose to use packstack, install the basic topology with this (more will
-be supported later):
-
-    $ python bin/packstack_deploy.py --setup=swift_small_setup
-
-Run the tests:
-
-    $ nosetests
+Configure the `management` section to point to your meta-OpenStack
+system endpoint, user name and password. If your meta-OpenStack uses
+unique IPs for the VMs, you can just use those, but if not you need to
+provide the IDs of the VMs under the `id` field. Change the disk names
+in case they are called differently than `/dev/{vdb,vdc,vdd}`. There is a
+workaround for the case when you have only one extra disk - three partitions
+will be created on it, so you can use a single one and the tools will detect
+it. All the disks will be wiped and formatted. The services password
+is what will be set in the answer files for keystone and other things, you
+don't need to change it. The timeout is in seconds and tells the tests how
+long to wait for stuff like replica regeneration before failing the tests. For
+more information about the configuration file, look at `etc/schema.json`
+which is a JSON schema of it and can serve as a validation tool.
 
 ## Running the tested system on bare metal
 
