@@ -46,49 +46,97 @@ PACKSTACK_DEFAULT_OPTIONS = {
     "CONFIG_NOVA_NETWORK_PRIVIF":       "lo",
 }
 
+# packstack answerfile that will be created locally
+ANSWERFILE = 'packstack.answer'
+
 
 def main():
     server = server_tools.LocalServer()
     install_packages(server, REQUIRED_PACKAGES)
 
-    deploy_swift_small_setup(server)
-
-
-def deploy_swift_small_setup(main_server):
-    """Install keystone+swift proxy on one server, data servers on other.
-
-    Also formats the extra disks provided to the data servers.
-    """
-    setup_name = 'swift_small_setup'
-    answerfile = "packstack." + setup_name + ".answer"
-    config = common.get_config()
-    manager = ServerManager(config)
-
-    keystone = manager.get(role='keystone')
-    proxy_servers_ip = [s.ip for s in manager.servers(role='swift_proxy')]
-    data_servers = list(manager.servers(role='swift_data'))
-    data_nodes = server_tools.prepare_swift_disks(data_servers)
-
-    packstack_opt = copy(PACKSTACK_DEFAULT_OPTIONS)
-    packstack_opt["CONFIG_SWIFT_INSTALL"] = "y"
-    packstack_opt["CONFIG_KEYSTONE_HOST"] = keystone.ip
-    packstack_opt["CONFIG_MYSQL_HOST"] = keystone.ip
-    packstack_opt["CONFIG_QPID_HOST"] = keystone.ip
-    packstack_opt["CONFIG_SWIFT_PROXY_HOSTS"] = ",".join(proxy_servers_ip)
-    packstack_opt["CONFIG_NOVA_COMPUTE_HOSTS"] = ",".join(proxy_servers_ip)
-    packstack_opt["CONFIG_SWIFT_STORAGE_HOSTS"] = ",".join(data_nodes)
-    _create_packstack_answerfile(main_server, packstack_opt, answerfile)
-
-    LOG.info("Running packstack, this may take a while")
-    main_server.cmd("packstack --answer-file=%s" % answerfile,
-                    collect_stdout=False)
-    _configure_keystone(main_server, config["keystone"])
-    _set_swift_mount_check(data_servers)
+    create_configuration(server)
+    deploy(server)
 
 
 def install_packages(server, packages):
     packages = ' '.join(packages)
     server.cmd('yum install -y %s' % packages, log_output=True)
+
+
+def create_configuration(main_server):
+    """Using the server roles in the config file, create a packstack answerfile
+
+    """
+    packstack_answers = copy(PACKSTACK_DEFAULT_OPTIONS)
+    config = common.get_config()
+    manager = ServerManager(config)
+    _configure_roles(packstack_answers, manager)
+    _configure_swift(packstack_answers, manager)
+    _configure_remaining_roles(packstack_answers, manager)
+    _create_packstack_answerfile(main_server, packstack_answers, ANSWERFILE)
+
+
+def deploy(main_server):
+    """Run Packstack and configure components if necessary
+    """
+    config = common.get_config()
+    manager = ServerManager(config)
+    LOG.info("Running packstack, this may take a while")
+    main_server.cmd("packstack --answer-file=%s" % ANSWERFILE,
+                    collect_stdout=False)
+    _configure_keystone(main_server, config["keystone"])
+
+    data_servers = list(manager.servers(role='swift_data'))
+    _set_swift_mount_check(data_servers)
+
+
+def get_ips(host_list):
+    """Return string 'address,address,address' from IPs in the host list"""
+    return ','.join([x.ip for x in host_list])
+
+
+def _configure_roles(packstack_opt, manager):
+    keystone = manager.get_all(role='keystone')
+    if keystone:
+        packstack_opt["CONFIG_KEYSTONE_HOST"] = get_ips(keystone)
+
+
+def _configure_swift(packstack_opt, manager):
+    """Add Swift proxy/data servers to packstack answerfile.
+
+    Also formats the extra disks provided to the data servers.
+    """
+
+    proxy_servers = manager.servers(role='swift_proxy')
+    data_servers = list(manager.servers(role='swift_data'))
+    if not (proxy_servers and data_servers):
+        return
+
+    data_nodes = server_tools.prepare_swift_disks(data_servers)
+    packstack_opt["CONFIG_SWIFT_INSTALL"] = "y"
+    packstack_opt["CONFIG_SWIFT_PROXY_HOSTS"] = get_ips(proxy_servers)
+    packstack_opt["CONFIG_SWIFT_STORAGE_HOSTS"] = ",".join(data_nodes)
+
+
+def _configure_remaining_roles(packstack_opt, manager):
+    """Configure neccessary services if they haven't been configured yet
+
+    If services like the database or messaging queue haven't been configured so
+    far, set them to use the controller (of if that is not available, use the
+    keystone host...or just pick any of the hosts if even that wasn't
+    specified)
+    """
+    controller = manager.get(role='controller')
+    keystone = manager.get(role='keystone')
+
+    # server on which to install remaining services
+    general_server = controller or keystone or manager.get()
+
+    for service in ["CONFIG_KEYSTONE_HOST",
+                    "CONFIG_MYSQL_HOST",
+                    "CONFIG_QPID_HOST"]:
+        if service not in packstack_opt:
+            packstack_opt[service] = general_server
 
 
 def _configure_keystone(main_server, config):
