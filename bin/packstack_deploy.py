@@ -161,11 +161,20 @@ def _set_default_host_in_answerfile():
     Packstack by default creates an answerfile that uses localhost for all
     services, but since we usually run Packstack from a separate server that
     isn't supposed to have OpenStack installed, it is better to choose one from
-    the servers given in the config.
+    the servers given in the config. The exception is the server on which
+    OpenStack clients should be installed, which will remain the same
+    (localhost).
     """
+    # save the original host to which OpenStack clients should be installed
+    res = LOCALHOST.cmd(
+        "openstack-config --get %s general CONFIG_OSCLIENT_HOST" % ANSWERFILE)
+    original_client_host = ''.join(res.out)
     default_host = _get_default_host().ip
     LOCALHOST.cmd("sed -ri 's/HOST(S?)\w*=.*/HOST\\1=%s/' %s"
                   % (default_host, ANSWERFILE))
+    # restore host for client installation
+    LOCALHOST.cmd("openstack-config --set %s general CONFIG_OSCLIENT_HOST %s"
+                  % (ANSWERFILE, original_client_host))
 
 
 def _create_packstack_answerfile(answers):
