@@ -21,6 +21,9 @@ logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 logging.getLogger("paramiko").setLevel(logging.WARNING)
 
+# local server object on which packstack will be run
+LOCALHOST = None
+
 # packages that will be checked for on local host
 REQUIRED_PACKAGES = ['openstack-packstack', 'openstack-utils',
                      'python-novaclient']
@@ -49,42 +52,42 @@ PACKSTACK_DEFAULT_OPTIONS = {
 # packstack answerfile that will be created locally
 ANSWERFILE = 'packstack.answer'
 
+CONFIG = common.get_config()
+
 
 def main():
-    server = server_tools.LocalServer()
-    install_packages(server, REQUIRED_PACKAGES)
+    global LOCALHOST
+    LOCALHOST = server_tools.LocalServer()
+    install_packages(REQUIRED_PACKAGES)
 
-    create_configuration(server)
-    deploy(server)
+    create_configuration()
+    deploy()
 
 
-def install_packages(server, packages):
+def install_packages(packages):
     packages = ' '.join(packages)
-    server.cmd('yum install -y %s' % packages, log_output=True)
+    LOCALHOST.cmd('yum install -y %s' % packages, log_output=True)
 
 
-def create_configuration(main_server):
+def create_configuration():
     """Using the server roles in the config file, create a packstack answerfile
 
     """
     packstack_answers = copy(PACKSTACK_DEFAULT_OPTIONS)
-    config = common.get_config()
-    manager = ServerManager(config)
+    manager = ServerManager(CONFIG)
     _configure_roles(packstack_answers, manager)
     _configure_swift(packstack_answers, manager)
-    _configure_remaining_roles(packstack_answers, manager)
-    _create_packstack_answerfile(main_server, packstack_answers, ANSWERFILE)
+    _create_packstack_answerfile(packstack_answers)
 
 
-def deploy(main_server):
+def deploy():
     """Run Packstack and configure components if necessary
     """
-    config = common.get_config()
-    manager = ServerManager(config)
+    manager = ServerManager(CONFIG)
     LOG.info("Running packstack, this may take a while")
-    main_server.cmd("packstack --answer-file=%s" % ANSWERFILE,
-                    collect_stdout=False)
-    _configure_keystone(main_server, config["keystone"])
+    LOCALHOST.cmd("packstack --answer-file=%s" % ANSWERFILE,
+                  collect_stdout=False)
+    _configure_keystone(CONFIG["keystone"])
 
     data_servers = list(manager.servers(role='swift_data'))
     _set_swift_mount_check(data_servers)
@@ -118,50 +121,57 @@ def _configure_swift(packstack_opt, manager):
     packstack_opt["CONFIG_SWIFT_STORAGE_HOSTS"] = ",".join(data_nodes)
 
 
-def _configure_remaining_roles(packstack_opt, manager):
-    """Configure neccessary services if they haven't been configured yet
+def _get_default_host():
+    """Get one of the hosts that will be defaultly used by services.
 
-    If services like the database or messaging queue haven't been configured so
-    far, set them to use the controller (of if that is not available, use the
-    keystone host...or just pick any of the hosts if even that wasn't
-    specified)
+    This is usually the host with the role 'controller' (one of them is
+    selected), but if there is no such role specified, use the 'keystone' role.
+    If even that is unavailable, just choose the first host provided.
     """
+    manager = ServerManager(CONFIG)
     controller = manager.get(role='controller')
     keystone = manager.get(role='keystone')
 
-    # server on which to install remaining services
-    general_server = controller or keystone or manager.get()
-
-    for service in ["CONFIG_KEYSTONE_HOST",
-                    "CONFIG_MYSQL_HOST",
-                    "CONFIG_QPID_HOST"]:
-        if service not in packstack_opt:
-            packstack_opt[service] = general_server
+    return controller or keystone or manager.get()
 
 
-def _configure_keystone(main_server, config):
+def _set_default_host_in_answerfile():
+    """Set all the hosts in the answerfile to the default host (controller).
+
+    Packstack by default creates an answerfile that uses localhost for all
+    services, but since we usually run Packstack from a separate server that
+    isn't supposed to have OpenStack installed, it is better to choose one from
+    the servers given in the config.
+    """
+    default_host = _get_default_host().ip
+    LOCALHOST.cmd("sed -ri 's/HOST(S?)\w*=.*/HOST\1=%s/' %s"
+                  % (default_host, ANSWERFILE))
+
+
+def _configure_keystone():
     # TODO create the user if it's not admin
-    user = config["user"]
-    password = config["password"]
-    main_server.cmd("source ~/keystonerc_admin && "
-                    "keystone user-password-update --pass '%s' %s"
-                    % (password, user))
+    user = CONFIG["user"]
+    password = CONFIG["password"]
+    LOCALHOST.cmd("source ~/keystonerc_admin && "
+                  "keystone user-password-update --pass '%s' %s"
+                  % (password, user))
     if user == "admin":
-        main_server.cmd("echo 'export OS_PASSWORD=%s' >> ~/keystonerc_admin"
-                        % password)
+        LOCALHOST.cmd("echo 'export OS_PASSWORD=%s' >> ~/keystonerc_admin"
+                      % password)
     else:
         # TODO create keystonerc_username
         pass
 
 
-def _create_packstack_answerfile(main_server, answers, filename):
-    if not main_server.file_exists(filename):
-        main_server.cmd("packstack --gen-answer-file=%s" % filename)
+def _create_packstack_answerfile(answers):
+    if not LOCALHOST.file_exists(ANSWERFILE):
+        LOCALHOST.cmd("packstack --gen-answer-file=%s" % ANSWERFILE)
+        _set_default_host_in_answerfile()
     else:
         LOG.info("Reusing existing packstack answer file")
     for question, answer in answers.iteritems():
-        main_server.cmd("openstack-config --set %s general %s %s"
-                        % (filename, question, answer))
+        LOCALHOST.cmd("openstack-config --set %s general %s %s"
+                      % (ANSWERFILE, question, answer))
 
 
 def _set_swift_mount_check(data_servers):
