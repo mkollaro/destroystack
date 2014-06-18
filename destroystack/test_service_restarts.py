@@ -21,18 +21,14 @@ import destroystack.tools.common as common
 import destroystack.tools.tempest as tempest
 
 
-def requirements(manager):
-    return "tempest" in common.CONFIG
-
-
 class TestRestarts():
     manager = None
 
     @classmethod
     def setupClass(cls):
-        cls.manager = ServerManager(common.CONFIG)
-        if not requirements(cls.manager):
-            raise SkipTest
+        cls.manager = ServerManager()
+        if "tempest" not in common.CONFIG:
+            raise SkipTest("Tempest required to verify service restarts")
         cls.manager.save_state()
 
     def setUp(self):

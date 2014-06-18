@@ -22,9 +22,7 @@ LOG = logging.getLogger(__name__)
 TIMEOUT = common.get_timeout()
 
 
-class Tempest(object):
-    def __init__(self, tempest_dir):
-        self._dir = tempest_dir
-
-    def run(self, include=None, exclude=None, test_type=None):
-        pass
+def run(include=None, exclude=None, test_type=None):
+    tempest_dir = common.CONFIG.get("tempest", None)
+    if not tempest_dir:
+        raise Exception("Tempest directory not provided in config")
