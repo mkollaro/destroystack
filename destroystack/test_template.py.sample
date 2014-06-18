@@ -33,7 +33,6 @@ won't be there anymore.
 
 from nose import SkipTest
 from destroystack.tools.server_manager import ServerManager
-import destroystack.tools.common as common
 
 
 def requirements(manager):
@@ -51,8 +50,7 @@ class TestMySetupName():
 
     @classmethod
     def setupClass(cls):
-        config = common.get_config()
-        cls.manager = ServerManager(config)
+        cls.manager = ServerManager()
         if not requirements(cls.manager):
             raise SkipTest
         # if enabled in the configuration, create a snapshot of the machines,

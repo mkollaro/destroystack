@@ -56,8 +56,6 @@ PACKSTACK_DEFAULT_OPTIONS = {
 # packstack answerfile that will be created locally
 ANSWERFILE = 'packstack.answer'
 
-CONFIG = common.get_config()
-
 
 def main():
     global LOCALHOST
@@ -78,7 +76,7 @@ def create_configuration():
 
     """
     packstack_answers = copy(PACKSTACK_DEFAULT_OPTIONS)
-    manager = ServerManager(CONFIG)
+    manager = ServerManager()
     _configure_roles(packstack_answers, manager)
     _configure_keystone(packstack_answers, manager)
     _configure_swift(packstack_answers, manager)
@@ -88,7 +86,7 @@ def create_configuration():
 def deploy():
     """Run Packstack and configure components if necessary
     """
-    manager = ServerManager(CONFIG)
+    manager = ServerManager()
     LOG.info("Running packstack, this may take a while")
     LOCALHOST.cmd("packstack --answer-file=%s" % ANSWERFILE,
                   collect_stdout=False)
@@ -117,11 +115,11 @@ def _configure_keystone(packstack_opt, manager):
     if keystone:
         packstack_opt["CONFIG_KEYSTONE_HOST"] = get_ips(keystone)
 
-    user = CONFIG["keystone"].get("user", "admin")
+    user = common.CONFIG["keystone"].get("user", "admin")
     if user != "admin":
         raise Exception("This helper script assumes that you are using the"
                         " 'admin' keystone user")
-    password = CONFIG["keystone"].get("password", DEFAULT_SERVICE_PASS)
+    password = common.CONFIG["keystone"].get("password", DEFAULT_SERVICE_PASS)
     packstack_opt["CONFIG_KEYSTONE_ADMIN_PW"] = password
 
 
@@ -149,7 +147,7 @@ def _get_default_host():
     selected), but if there is no such role specified, use the 'keystone' role.
     If even that is unavailable, just choose the first host provided.
     """
-    manager = ServerManager(CONFIG)
+    manager = ServerManager()
     controller = manager.get(role='controller')
     keystone = manager.get(role='keystone')
 

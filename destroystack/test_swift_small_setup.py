@@ -43,8 +43,7 @@ class TestSwiftSmallSetup():
 
     @classmethod
     def setupClass(cls):
-        config = common.get_config()
-        cls.manager = ServerManager(config)
+        cls.manager = ServerManager()
         if not requirements(cls.manager):
             raise SkipTest
         cls.manager.save_state()

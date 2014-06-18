@@ -44,10 +44,12 @@ def get_config(filename=MAIN_CONFIG_FILE):
         config = json.load(f)
     return config
 
+CONFIG = get_config()
+
 
 def get_timeout():
     """Get the timeout configuration from etc/config.json"""
-    return get_config()["timeout"]
+    return CONFIG["timeout"]
 
 
 def get_keystone_auth():
@@ -61,14 +63,13 @@ def get_keystone_auth():
 
     :returns: (auth_url, user, tenant, password)
     """
-    config = get_config()
-    user = config['keystone'].get('user', 'admin')
-    tenant = config['keystone'].get('tenant', user)
-    password = config['keystone']['password']
+    user = CONFIG['keystone'].get('user', 'admin')
+    tenant = CONFIG['keystone'].get('tenant', user)
+    password = CONFIG['keystone']['password']
 
     # find out the auth_url
     keystone_server = None
-    for server in config['servers']:
+    for server in CONFIG['servers']:
         if 'roles' in server and 'keystone' in server['roles']:
             keystone_server = server
     if not keystone_server:

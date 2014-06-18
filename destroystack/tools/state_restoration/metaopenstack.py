@@ -29,7 +29,6 @@ import destroystack.tools.common as common
 
 LOG = logging.getLogger(__name__)
 SNAPSHOT_TIMEOUT = 5*60
-CONFIG = common.get_config()
 
 
 def create_snapshots(tag=''):
@@ -114,18 +113,18 @@ def _find_snapshot(novaclient, snapshot_name):
 
 
 def _get_nova_client():
-    user = CONFIG['management']['user']
-    tenant = CONFIG['management']['tenant']
-    auth_url = CONFIG['management']['auth_url']
-    password = CONFIG['management']['password']
+    user = common.CONFIG['management']['user']
+    tenant = common.CONFIG['management']['tenant']
+    auth_url = common.CONFIG['management']['auth_url']
+    password = common.CONFIG['management']['password']
     nova = client.Client('1.1', user, password, tenant, auth_url,
                          service_type="compute")
     return nova
 
 
 def _get_snapshot_name(vm_name, tag):
-    basename = CONFIG['management'].get('snapshot_prefix',
-                                        'destroystack-snapshot')
+    basename = common.CONFIG['management'].get('snapshot_prefix',
+                                               'destroystack-snapshot')
     if tag:
         tag = '_' + tag
     name = "%s_%s%s" % (basename, vm_name, tag)
@@ -140,7 +139,7 @@ def _find_vms(novaclient):
     """
     vms = list()
     ssh_servers = list()
-    for server in CONFIG['servers']:
+    for server in common.CONFIG['servers']:
         if 'id' in server:
             vm = novaclient.servers.get(server['id'])
         else:

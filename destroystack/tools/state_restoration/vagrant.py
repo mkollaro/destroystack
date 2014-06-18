@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
@@ -30,7 +29,6 @@ import destroystack.tools.common as common
 from destroystack.tools.servers import LocalServer
 
 LOG = logging.getLogger(__name__)
-CONFIG = common.get_config()
 
 # directory which contains the Vagrantfile
 VAGRANT_DIR = common.PROJ_DIR
@@ -118,8 +116,8 @@ def _get_vagrant_vms():
 
 
 def _get_snapshot_name(vm_name, tag):
-    basename = CONFIG['management'].get('snapshot_prefix',
-                                        'destroystack-snapshot')
+    basename = common.CONFIG['management'].get('snapshot_prefix',
+                                               'destroystack-snapshot')
     if tag:
         tag = '_' + tag
     name = "%s_%s%s" % (basename, vm_name, tag)

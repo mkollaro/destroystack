@@ -19,6 +19,7 @@ import logging
 import destroystack.tools.state_restoration.metaopenstack as metaopenstack
 import destroystack.tools.state_restoration.vagrant as vagrant
 import destroystack.tools.state_restoration.manual as manual_restoration
+import destroystack.tools.common as common
 import destroystack.tools.servers as server_tools
 
 # Possible roles that a server can have, depending what services are installed
@@ -33,13 +34,12 @@ LOG = logging.getLogger(__name__)
 
 class ServerManager(object):
 
-    def __init__(self, config):
+    def __init__(self):
         """
         :param config: path to configuration file, should be the one which was
             generated from the main one and contains roles for each server
         """
-        self._config = config
-        self._servers = server_tools.create_servers(config['servers'])
+        self._servers = server_tools.create_servers(common.CONFIG['servers'])
         self._workaround_single_swift_disk()
 
     def servers(self, role=None, roles=None):
@@ -133,7 +133,7 @@ class ServerManager(object):
         :param action: save or load
         """
         assert action in ['save', 'load']
-        man_type = self._config['management']['type']
+        man_type = common.CONFIG['management']['type']
 
         if man_type == 'metaopenstack':
             if action == 'save':
