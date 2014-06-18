@@ -28,6 +28,9 @@ LOCALHOST = None
 REQUIRED_PACKAGES = ['openstack-packstack', 'openstack-utils',
                      'python-novaclient']
 
+# password that will be set to services (like database)
+DEFAULT_SERVICE_PASS = "123456"
+
 PACKSTACK_DEFAULT_OPTIONS = {
     "CONFIG_GLANCE_INSTALL":            "n",
     "CONFIG_CINDER_INSTALL":            "n",
@@ -44,7 +47,7 @@ PACKSTACK_DEFAULT_OPTIONS = {
     "CONFIG_SWIFT_STORAGE_FSTYPE":      "ext4",
     "CONFIG_PROVISION_TEMPEST":         "n",
     "CONFIG_PROVISION_DEMO":            "n",
-    "CONFIG_KEYSTONE_ADMIN_PW":         "123456",
+    "CONFIG_KEYSTONE_ADMIN_PW":         DEFAULT_SERVICE_PASS,
     "CONFIG_NOVA_NETWORK_PUBIF":        "eth0",
     "CONFIG_NOVA_COMPUTE_PRIVIF":       "lo",
     "CONFIG_NOVA_NETWORK_PRIVIF":       "lo",
@@ -77,6 +80,7 @@ def create_configuration():
     packstack_answers = copy(PACKSTACK_DEFAULT_OPTIONS)
     manager = ServerManager(CONFIG)
     _configure_roles(packstack_answers, manager)
+    _configure_keystone(packstack_answers, manager)
     _configure_swift(packstack_answers, manager)
     _create_packstack_answerfile(packstack_answers)
 
@@ -88,7 +92,6 @@ def deploy():
     LOG.info("Running packstack, this may take a while")
     LOCALHOST.cmd("packstack --answer-file=%s" % ANSWERFILE,
                   collect_stdout=False)
-    _configure_keystone(CONFIG["keystone"])
 
     data_servers = list(manager.servers(role='swift_data'))
     _set_swift_mount_check(data_servers)
@@ -100,15 +103,25 @@ def get_ips(host_list):
 
 
 def _configure_roles(packstack_opt, manager):
-    keystone = manager.get_all(role='keystone')
-    if keystone:
-        packstack_opt["CONFIG_KEYSTONE_HOST"] = get_ips(keystone)
     compute = manager.get_all(role='compute')
     if compute:
         packstack_opt["CONFIG_COMPUTE_HOSTS"] = get_ips(compute)
         packstack_opt["CONFIG_NOVA_INSTALL"] = "y"
         packstack_opt["CONFIG_GLANCE_INSTALL"] = "y"
         packstack_opt["CONFIG_CINDER_INSTALL"] = "y"
+
+
+def _configure_keystone(packstack_opt, manager):
+    keystone = manager.get_all(role='keystone')
+    if keystone:
+        packstack_opt["CONFIG_KEYSTONE_HOST"] = get_ips(keystone)
+
+    user = CONFIG["keystone"].get("user", "admin")
+    if user != "admin":
+        raise Exception("This helper script assumes that you are using the"
+                        " 'admin' keystone user")
+    password = CONFIG["keystone"].get("password", DEFAULT_SERVICE_PASS)
+    packstack_opt["CONFIG_KEYSTONE_ADMIN_PW"] = password
 
 
 def _configure_swift(packstack_opt, manager):
@@ -151,23 +164,8 @@ def _set_default_host_in_answerfile():
     the servers given in the config.
     """
     default_host = _get_default_host().ip
-    LOCALHOST.cmd("sed -ri 's/HOST(S?)\w*=.*/HOST\1=%s/' %s"
+    LOCALHOST.cmd("sed -ri 's/HOST(S?)\w*=.*/HOST\\1=%s/' %s"
                   % (default_host, ANSWERFILE))
-
-
-def _configure_keystone():
-    # TODO create the user if it's not admin
-    user = CONFIG["user"]
-    password = CONFIG["password"]
-    LOCALHOST.cmd("source ~/keystonerc_admin && "
-                  "keystone user-password-update --pass '%s' %s"
-                  % (password, user))
-    if user == "admin":
-        LOCALHOST.cmd("echo 'export OS_PASSWORD=%s' >> ~/keystonerc_admin"
-                      % password)
-    else:
-        # TODO create keystonerc_username
-        pass
 
 
 def _create_packstack_answerfile(answers):
