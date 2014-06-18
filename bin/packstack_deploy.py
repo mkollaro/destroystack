@@ -106,6 +106,7 @@ def _configure_roles(packstack_opt, manager):
     compute = manager.get_all(role='compute')
     if compute:
         packstack_opt["CONFIG_COMPUTE_HOSTS"] = get_ips(compute)
+        packstack_opt["CONFIG_NOVA_COMPUTE_HOSTS"] = get_ips(compute)
         packstack_opt["CONFIG_NOVA_INSTALL"] = "y"
         packstack_opt["CONFIG_GLANCE_INSTALL"] = "y"
         packstack_opt["CONFIG_CINDER_INSTALL"] = "y"
