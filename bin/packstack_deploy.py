@@ -43,6 +43,7 @@ PACKSTACK_DEFAULT_OPTIONS = {
     "CONFIG_SWIFT_STORAGE_REPLICAS":    "3",
     "CONFIG_SWIFT_STORAGE_FSTYPE":      "ext4",
     "CONFIG_PROVISION_TEMPEST":         "n",
+    "CONFIG_PROVISION_DEMO":            "n",
     "CONFIG_KEYSTONE_ADMIN_PW":         "123456",
     "CONFIG_NOVA_NETWORK_PUBIF":        "eth0",
     "CONFIG_NOVA_COMPUTE_PRIVIF":       "lo",
@@ -102,6 +103,12 @@ def _configure_roles(packstack_opt, manager):
     keystone = manager.get_all(role='keystone')
     if keystone:
         packstack_opt["CONFIG_KEYSTONE_HOST"] = get_ips(keystone)
+    compute = manager.get_all(role='compute')
+    if compute:
+        packstack_opt["CONFIG_COMPUTE_HOSTS"] = get_ips(compute)
+        packstack_opt["CONFIG_NOVA_INSTALL"] = "y"
+        packstack_opt["CONFIG_GLANCE_INSTALL"] = "y"
+        packstack_opt["CONFIG_CINDER_INSTALL"] = "y"
 
 
 def _configure_swift(packstack_opt, manager):
