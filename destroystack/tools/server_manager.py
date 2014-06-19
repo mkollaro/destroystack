@@ -32,7 +32,16 @@ MANAGEMENT_TYPES = ['none', 'manual', 'metaopenstack']
 LOG = logging.getLogger(__name__)
 
 
-class ServerManager(object):
+class Singleton(object):
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(Singleton, cls).__new__(cls, *args, **kwargs)
+        return cls._instance
+
+
+class ServerManager(Singleton):
 
     def __init__(self):
         """
