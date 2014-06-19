@@ -136,6 +136,10 @@ class ServerManager(Singleton):
         for server in self._servers:
             server.connect()
 
+    def disconnect(self):
+        for server in self._servers:
+            server.disconnect()
+
     def _choose_state_restoration_action(self, action, tag):
         """Choose which function to use, based on "management.type" in config.
 

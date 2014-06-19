@@ -129,12 +129,15 @@ class Server(LocalServer):
         self._ssh.load_system_host_keys()
         self.connect()
 
-    def __del__(self):
-        self._ssh.close()
-
     def connect(self):
         self._ssh.connect(self.ip, username=self._username,
                           password=self._password)
+
+    def disconnect(self):
+        self._ssh.close()
+
+    def __del__(self):
+        self.disconnect()
 
     def cmd(self, command, ignore_failures=False,
             log_cmd=True, log_output=False, **kwargs):
