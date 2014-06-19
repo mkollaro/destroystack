@@ -19,5 +19,7 @@ from destroystack.tools.server_manager import ServerManager
 
 
 def teardown_package():
-    manager = ServerManager()
-    manager.disconnect()
+    """Disconnect SSH to all servers"""
+    if ServerManager._instance:
+        manager = ServerManager()
+        manager.disconnect()
