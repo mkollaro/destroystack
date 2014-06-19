@@ -31,10 +31,10 @@ class TestRestarts():
             raise SkipTest("Tempest required to verify service restarts")
         cls.manager.save_state()
 
-    def setUp(self):
-        pass
-
-    def tearDown(self):
+    def teardownClsas(self):
+        # do the state restoration only once per this group, since they are not
+        # particularly damaging to the system
+        # TODO: also run it when a test fails
         self.manager.load_state()
 
     def test_compute_restart(self):
