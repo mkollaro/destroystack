@@ -40,6 +40,6 @@ class TestRestarts():
     def test_compute_restart(self):
         compute_server = self.manager.get(role='compute')
         if not compute_server:
-            raise SkipTest
+            raise SkipTest("Compute role needed for compute service test")
         compute_server.cmd("service openstack-nova-compute restart")
         tempest.run(test_type="smoke", include="compute")
