@@ -209,7 +209,7 @@ def _set_iptables(manager):
         # since this functionality might not be necessary, just give up
         return
 
-    for server in manager.get():
+    for server in manager.get_all():
         server.cmd("iptables -I INPUT -s %s -j ACCEPT" % ip)
         server.cmd("service iptables save")
 
