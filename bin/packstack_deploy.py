@@ -93,6 +93,7 @@ def deploy():
 
     data_servers = list(manager.servers(role='swift_data'))
     _set_swift_mount_check(data_servers)
+    _set_iptables(manager)
 
 
 def get_ips(host_list):
@@ -199,6 +200,22 @@ def _set_swift_mount_check(data_servers):
             /etc/swift/*-server.conf""")
     for server in data_servers:
         server.cmd("swift-init account container object rest restart")
+
+
+def _set_iptables(manager):
+    """Allow all incoming traffic to the OpenStack nodes from local IP"""
+    ip = _get_localhost_ip()
+    if not ip:
+        # since this functionality might not be necessary, just give up
+        return
+
+    for server in manager.get():
+        server.cmd("iptables -I INPUT -s %s -j ACCEPT" % ip)
+        server.cmd("service iptables save")
+
+
+def _get_localhost_ip():
+    LOCALHOST.cmd("hostname --ip-address")
 
 
 if __name__ == '__main__':
