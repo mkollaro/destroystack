@@ -215,7 +215,7 @@ def _set_iptables(manager):
 
 
 def _get_localhost_ip():
-    LOCALHOST.cmd("hostname --ip-address")
+    return ''.join(LOCALHOST.cmd("hostname --ip-address").out)
 
 
 if __name__ == '__main__':
