@@ -31,11 +31,12 @@ class TestRestarts():
             raise SkipTest("Tempest required to verify service restarts")
         cls.manager.save_state()
 
-    def teardownClass(self):
+    @classmethod
+    def teardownClass(cls):
         # do the state restoration only once per this group, since they are not
         # particularly damaging to the system
         # TODO: also run it when a test fails
-        self.manager.load_state()
+        cls.manager.load_state()
 
     def test_nova_compute_restart(self):
         server = self.manager.get(role='compute')
