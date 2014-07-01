@@ -31,15 +31,39 @@ class TestRestarts():
             raise SkipTest("Tempest required to verify service restarts")
         cls.manager.save_state()
 
-    def teardownClsas(self):
+    def teardownClass(self):
         # do the state restoration only once per this group, since they are not
         # particularly damaging to the system
         # TODO: also run it when a test fails
         self.manager.load_state()
 
-    def test_compute_restart(self):
-        compute_server = self.manager.get(role='compute')
-        if not compute_server:
+    def test_nova_compute_restart(self):
+        server = self.manager.get(role='compute')
+        if not server:
             raise SkipTest("Compute role needed for compute service test")
-        compute_server.cmd("service openstack-nova-compute restart")
+        server.cmd("service openstack-nova-compute restart")
         tempest.run(test_type="smoke", include="compute")
+
+    def test_nova_network_restart(self):
+        server = self.manager.get(role='controller')
+        if not server:
+            raise SkipTest("Compute role needed for compute service test")
+        res = server.cmd("service openstack-nova-network status",
+                         ignore_failures=True)
+        if res.exit_code == 1:  # maybe neutron is being used
+            raise SkipTest("Service nova-network doesn't seem to exist")
+        tempest.run(test_type="smoke", include="network")
+
+    def test_keystone_restart(self):
+        server = self.manager.get(role='keystone')
+        if not server:
+            raise SkipTest("Keystone role needed for keystone service test")
+        server.cmd("service openstack-keystone restart")
+        tempest.run(test_type="smoke", include="identity")
+
+    def test_swift_proxy_restart(self):
+        server = self.manager.get(role='swift_proxy')
+        if not server:
+            raise SkipTest("Swift_proxy role needed for swift service test")
+        server.cmd("service openstack-swift-proxy restart")
+        tempest.run(test_type="smoke", include="object_storage")
