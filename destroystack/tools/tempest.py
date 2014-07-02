@@ -34,13 +34,9 @@ def run(include=None, exclude=None, test_type=None, test_dir="api",
     TODO: parse result, return number of test ran/succeeded/failed
 
     :param include: which tests should run (e.g. 'identity', 'compute', ..)
-        can be a string or a list of strings - if it's a list of strings,
-        tests matching either of the strings will be run
-    :param exclude: which tests to skip, can be a regular expression
+    :param exclude: which tests to skip, (TODO: not implemented)
     :param test_type: can be "smoke" or "gate" or other test types
-    :param test_dir: which directory in tempest/ to search for the tests, can
-        be a string like "api" or "scenario", or a list of strings, which will
-        cause all of those directories to be searched
+    :param test_dir: which directory in tempest/ to search for the tests
     :param regexp: specify your own regular expression to filter tests, this
         will overwrite the parameters `include`, `exclude`, `test_type`,
         and `test_dir`
@@ -49,6 +45,8 @@ def run(include=None, exclude=None, test_type=None, test_dir="api",
     :returns: `tools.servers.CommandResult` of the test run
     :raises: AssertionError if one of the tests fail
     """
+    if exclude:
+        raise NotImplementedError("The `exclude` param is not implemented")
     tempest_dir = common.CONFIG.get("tempest", None)
     if not tempest_dir:
         raise Exception("Tempest directory not provided in config")
