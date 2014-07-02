@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from exceptions import AssertionError
 import logging
 import destroystack.tools.common as common
 import destroystack.tools.servers as server_tools
@@ -46,7 +47,7 @@ def run(include=None, exclude=None, test_type=None, test_dir="api",
     :param concurrency: how many threads to use to execute the tests
 
     :returns: `tools.servers.CommandResult` of the test run
-    :raises: ServerException if one of the tests fail
+    :raises: AssertionError if one of the tests fail
     """
     tempest_dir = common.CONFIG.get("tempest", None)
     if not tempest_dir:
@@ -58,4 +59,9 @@ def run(include=None, exclude=None, test_type=None, test_dir="api",
            " --concurrency=%s" % (tempest_dir, regexp, concurrency))
 
     localhost = server_tools.LocalServer()
-    return localhost.cmd(cmd)
+    result = localhost.cmd(cmd, ignore_failures=True)
+    if result.exit_code == 0:
+        return result
+    else:
+        raise AssertionError("Some of the Tempest tests failed, system is not"
+                             " functional")
