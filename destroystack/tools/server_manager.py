@@ -191,4 +191,4 @@ class ServerManager(Singleton):
         for server in list(self.servers(role='swift_data')):
             if len(server.disks) == 1:
                 disk = server.disks[0]
-                server.disks = [disk+"1", disk+"2", disk+"3"]
+                server.disks = [disk + "1", disk + "2", disk + "3"]

@@ -104,16 +104,17 @@ def populate_swift_with_random_files(swift, prefix='',
     containers = [prefix + "container" + str(i)
                   for i in range(0, container_count)]
     files = [prefix + "file" + str(i) + ".txt"
-             for i in range(0, container_count*files_per_container)]
+             for i in range(0, container_count * files_per_container)]
     if not os.path.exists(TESTFILE_DIR):
         os.makedirs(TESTFILE_DIR)
     for filename in files:
         f = open(os.path.join(TESTFILE_DIR, filename), 'w')
-        f.write(random_string()+'\n')
+        f.write(random_string() + '\n')
         f.close()
     start = 0
     for container in containers:
-        upload_files(swift, container, files[start:start+files_per_container])
+        upload_files(swift, container,
+                     files[start:start + files_per_container])
         start += files_per_container
     LOG.info("Finished uploading random files to Swift")
 

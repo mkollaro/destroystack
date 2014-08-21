@@ -28,7 +28,7 @@ from destroystack.tools.servers import Server as SshServer
 import destroystack.tools.common as common
 
 LOG = logging.getLogger(__name__)
-SNAPSHOT_TIMEOUT = 5*60
+SNAPSHOT_TIMEOUT = 5 * 60
 
 
 def create_snapshots(tag=''):
@@ -87,7 +87,7 @@ def restore_snapshots(tag=''):
                  timeout_sec=SNAPSHOT_TIMEOUT)
     # create new ssh connections
     # TODO wait until ssh works, not just an arbitrary sleep
-    time.sleep(3*60)
+    time.sleep(3 * 60)
 
 
 def delete_snapshots(tag=''):

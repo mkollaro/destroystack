@@ -358,11 +358,11 @@ def prepare_swift_disks(servers):
             _partition_swift_disk(server, partition_disk)
         if len(server.disks) == 1:
             disk = server.disks[0]
-            server.disks = [disk+"1", disk+"2", disk+"3"]
+            server.disks = [disk + "1", disk + "2", disk + "3"]
         LOG.info("Formatting extra disks on %s" % server)
         server.format_extra_disks()
         # get description of devices for packstack answerfile
-        devices = ['/'.join([server.ip, disk]) for disk in server.disks]
+        devices = ['/'.join([server.ip, d]) for d in server.disks]
         description.extend(devices)
     return description
 
