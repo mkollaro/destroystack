@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2013 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from exceptions import AssertionError
+import exceptions
 import logging
 import destroystack.tools.common as common
 import destroystack.tools.servers as server_tools
@@ -61,5 +58,5 @@ def run(include=None, exclude=None, test_type=None, test_dir="api",
     if result.exit_code == 0:
         return result
     else:
-        raise AssertionError("Some of the Tempest tests failed, system is not"
-                             " functional")
+        raise exceptions.AssertionError("Some of the Tempest tests failed,"
+                                        " system is not functional")

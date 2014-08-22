@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2013 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,7 +45,7 @@ CONFIG = get_config()
 
 
 def get_timeout():
-    """Get the timeout configuration from etc/config.json"""
+    """Get the timeout configuration from etc/config.json."""
     return CONFIG["timeout"]
 
 
@@ -94,7 +91,7 @@ def upload_files(swift, container, filename_list):
 
 def populate_swift_with_random_files(swift, prefix='',
                                      container_count=5, files_per_container=5):
-    """ Create random files in test_files dir and upload them to Swift.
+    """Create random files in test_files dir and upload them to Swift.
 
     :param prefix: prefix before container and file names
     :param container_count: how many containers to create
@@ -120,7 +117,7 @@ def populate_swift_with_random_files(swift, prefix='',
 
 
 def delete_testfiles(prefix=''):
-    """ Delete all *.txt file in test_files directory
+    """Delete all *.txt file in test_files directory
 
     :param prefix: only delete files starting with prefix
     """
@@ -131,7 +128,7 @@ def delete_testfiles(prefix=''):
 
 
 def random_string(min_lenght=1, max_length=20):
-    """ Generate random string made out of alphanumeric characters. """
+    """Generate random string made out of alphanumeric characters."""
     length = random.randint(min_lenght, max_length)
     chars = string.ascii_letters + string.digits
 

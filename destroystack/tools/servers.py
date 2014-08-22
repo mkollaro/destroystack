@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2013 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +17,7 @@
 import paramiko
 import logging
 import subprocess
-from socket import gethostbyname
+import socket
 
 import destroystack.tools.common as common
 
@@ -36,7 +33,7 @@ def create_servers(configs):
 
 
 class ServerException(Exception):
-    """ Raised when there was a problem executing an SSH command on a server.
+    """Raised when there was a problem executing an SSH command on a server.
     """
     def __init__(self, command, message=None, **kwargs):
         new_msg = str(command)
@@ -101,7 +98,7 @@ class LocalServer(object):
 
 
 class Server(LocalServer):
-    """ Manage server.
+    """Manage server.
 
     Maintains an SSH connection to the server, keeps track of disks and their
     mount points.
@@ -112,7 +109,7 @@ class Server(LocalServer):
             raise Exception("Either hostname or IP address required")
         self.hostname = hostname
         if not ip:
-            self.ip = gethostbyname(self.hostname)
+            self.ip = socket.gethostbyname(self.hostname)
         else:
             self.ip = ip
         self.name = self._decide_on_name()
@@ -165,7 +162,7 @@ class Server(LocalServer):
         return self.name
 
     def kill_disk(self, disk=None):
-        """ Force umount one of the mounted disks.
+        """Force umount one of the mounted disks.
 
         :param disk: name of disk in /dev/ on the server, for example "sda",
             use any available disk if None
@@ -184,7 +181,7 @@ class Server(LocalServer):
         return disk
 
     def umount(self, disk):
-        """ Umount disk if it is mounted.
+        """Umount disk if it is mounted.
 
         TODO: wait a bit if the device is busy
         """
@@ -206,7 +203,7 @@ class Server(LocalServer):
         self.cmd(" ".join(cmd), log_output=True)
 
     def restore_disk(self, disk):
-        """ Mount disk, restore permissions and SELinux contexts.
+        """Mount disk, restore permissions and SELinux contexts.
 
         If some other method of killing disks is later used, this will change
         to use something else than mount.
@@ -218,7 +215,7 @@ class Server(LocalServer):
         self.cmd("restorecon -R /srv/*")
 
     def get_mount_points(self):
-        """ Get dict {disk:mountpoint} of mounted and managed disks.
+        """Get dict {disk:mountpoint} of mounted and managed disks.
 
         Only the disks given in configuration file (extra_disks) are taken into
         consideration. Unmounted disks are not included.
@@ -233,7 +230,7 @@ class Server(LocalServer):
         return mount_points
 
     def get_mounted_disks(self):
-        """ Return list of disk names like "sda".
+        """Return list of disk names like "sda".
         """
         return list(self.get_mount_points().keys())
 
@@ -264,7 +261,7 @@ class SSH(paramiko.SSHClient):
 
     def __call__(self, command, ignore_failures,
                  log_cmd, log_output, **kwargs):
-        """ Similar to exec_command, but checks for errors.
+        """Similar to exec_command, but checks for errors.
 
         If an error occurs, it logs the command, stdout and stderr.
 
@@ -378,10 +375,8 @@ def _needs_partitioning(server):
     """
     disks_description = set(['/dev/%s*' % disk.strip('123456789')
                              for disk in server.disks])
-    print disks_description
     result = server.cmd('ls %s' % ' '.join(disks_description), log_output=True)
     devices = set(result.out)
-    print devices
     if len(devices) == 1:
         disk = devices.pop()
         return disk[len('/dev/'):]

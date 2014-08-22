@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2013 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,12 +16,12 @@
 import logging
 import time
 import itertools
+import socket
 from novaclient import client
 from novaclient import exceptions
-from socket import gethostbyname
 
 from destroystack.tools.timeout import wait_for
-from destroystack.tools.servers import Server as SshServer
+import destroystack.tools.server as server_tools
 import destroystack.tools.common as common
 
 LOG = logging.getLogger(__name__)
@@ -67,7 +64,7 @@ def create_snapshots(tag=''):
 
 
 def restore_snapshots(tag=''):
-    """Restore snapshots of servers - find them by name"""
+    """Restore snapshots of servers - find them by name."""
     nova = _get_nova_client()
     vms, _ = _find_vms(nova)
     for vm_id in vms:
@@ -86,7 +83,7 @@ def restore_snapshots(tag=''):
                  lambda: nova.servers.get(vm_id),
                  timeout_sec=SNAPSHOT_TIMEOUT)
     # create new ssh connections
-    # TODO wait until ssh works, not just an arbitrary sleep
+    # TODO(mkollaro) wait until ssh works, not just an arbitrary sleep
     time.sleep(3 * 60)
 
 
@@ -145,12 +142,12 @@ def _find_vms(novaclient):
         else:
             ip = server.get('ip', None)
             if not ip:
-                ip = gethostbyname(server['hostname'])
+                ip = socket.gethostbyname(server['hostname'])
             vm = _find_vm_by_ip(novaclient, ip)
 
         if vm is None:
             raise exceptions.NotFound("Couldn't find server:\n %s" % server)
-        ssh = SshServer(**server)
+        ssh = server_tools.Server(**server)
         vms.append(vm)
         ssh_servers.append(ssh)
     return vms, ssh_servers

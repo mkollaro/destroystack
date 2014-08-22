@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2013 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -31,8 +28,8 @@ exists. After the test finishes, the state will be restored and so the file
 won't be there anymore.
 """
 
-from nose import SkipTest
-from destroystack.tools.server_manager import ServerManager
+import nose
+import destroystack.tools.server_manager as server_manager
 
 
 def requirements(manager):
@@ -50,9 +47,9 @@ class TestMySetupName():
 
     @classmethod
     def setupClass(cls):
-        cls.manager = ServerManager()
+        cls.manager = server_manager.ServerManager()
         if not requirements(cls.manager):
-            raise SkipTest
+            raise nose.SkipTest
         # if enabled in the configuration, create a snapshot of the machines,
         # or try backing up the files if the management is set to manual (not
         # recommended, it's only best-effort)

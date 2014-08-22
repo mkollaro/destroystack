@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2013 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,9 +21,9 @@ create/restore/delete the snapshots of all of them.
 """
 
 import logging
-from time import sleep
+import time
 import destroystack.tools.common as common
-from destroystack.tools.servers import LocalServer
+import destroystack.tools.servers as server_tools
 
 LOG = logging.getLogger(__name__)
 
@@ -44,7 +41,7 @@ def create_snapshots(tag=''):
     :param tag: appended to the name of the snapshot
     """
     vms = _get_vagrant_vms()
-    localhost = LocalServer()
+    localhost = server_tools.LocalServer()
     for vm_name in vms:
         snapshot_name = _get_snapshot_name(vm_name, tag)
         if not _snapshot_exists(vm_name, snapshot_name):
@@ -66,7 +63,7 @@ def restore_snapshots(tag=''):
     :param tag: added to the end of the searched name of the snapshot
     """
     vms = _get_vagrant_vms()
-    localhost = LocalServer()
+    localhost = server_tools.LocalServer()
     for vm_name in vms:
         snapshot_name = _get_snapshot_name(vm_name, tag)
         if not _snapshot_exists(vm_name, snapshot_name):
@@ -75,7 +72,7 @@ def restore_snapshots(tag=''):
         LOG.info("Restoring VM '%s' to  snapshot '%s'", vm_name, snapshot_name)
         localhost.cmd("cd '%s' && vagrant snapshot go %s %s"
                       % (VAGRANT_DIR, vm_name, snapshot_name))
-    sleep(3)
+    time.sleep(3)
 
 
 def delete_snapshots(tag=''):
@@ -88,7 +85,7 @@ def delete_snapshots(tag=''):
     :param tag: added to the end of the searched name of the snapshot
     """
     vms = _get_vagrant_vms()
-    localhost = LocalServer()
+    localhost = server_tools.LocalServer()
     for vm_name in vms:
         snapshot_name = _get_snapshot_name(vm_name, tag)
         if _snapshot_exists(vm_name, snapshot_name):
@@ -102,8 +99,8 @@ def delete_snapshots(tag=''):
 
 
 def _get_vagrant_vms():
-    """Return a list of existing Vagrant VMs names"""
-    localhost = LocalServer()
+    """Return a list of existing Vagrant VMs names."""
+    localhost = server_tools.LocalServer()
     result = localhost.cmd("cd '%s' && vagrant status| tail -n+3"
                            % VAGRANT_DIR, log_output=False)
     vms = result.out
@@ -125,7 +122,7 @@ def _get_snapshot_name(vm_name, tag):
 
 
 def _snapshot_exists(vm_name, snapshot_name):
-    localhost = LocalServer()
+    localhost = server_tools.LocalServer()
     result = localhost.cmd("cd '%s' && vagrant snapshot list %s| grep %s"
                            % (VAGRANT_DIR, vm_name, snapshot_name),
                            ignore_failures=True,

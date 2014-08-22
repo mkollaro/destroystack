@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# Copyright (c) 2013 Red Hat, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
@@ -10,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from copy import copy
+import copy
 import logging
 
 import destroystack.tools.common as common
+import destroystack.tools.server_manager as server_manager
 import destroystack.tools.servers as server_tools
-from destroystack.tools.server_manager import ServerManager
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
@@ -75,8 +78,8 @@ def create_configuration():
     """Using the server roles in the config file, create a packstack answerfile
 
     """
-    packstack_answers = copy(PACKSTACK_DEFAULT_OPTIONS)
-    manager = ServerManager()
+    packstack_answers = copy.copy(PACKSTACK_DEFAULT_OPTIONS)
+    manager = server_manager.ServerManager()
     _configure_roles(packstack_answers, manager)
     _configure_keystone(packstack_answers, manager)
     _configure_swift(packstack_answers, manager)
@@ -86,7 +89,7 @@ def create_configuration():
 def deploy():
     """Run Packstack and configure components if necessary
     """
-    manager = ServerManager()
+    manager = server_manager.ServerManager()
     LOG.info("Running packstack, this may take a while")
     LOCALHOST.cmd("packstack --answer-file=%s" % ANSWERFILE,
                   collect_stdout=False)
@@ -97,7 +100,7 @@ def deploy():
 
 
 def get_ips(host_list):
-    """Return string 'address,address,address' from IPs in the host list"""
+    """Return string 'address,address,address' from IPs in the host list."""
     return ','.join([x.ip for x in host_list])
 
 
@@ -148,7 +151,7 @@ def _get_default_host():
     selected), but if there is no such role specified, use the 'keystone' role.
     If even that is unavailable, just choose the first host provided.
     """
-    manager = ServerManager()
+    manager = server_manager.ServerManager()
     controller = manager.get(role='controller')
     keystone = manager.get(role='keystone')
 
@@ -203,7 +206,7 @@ def _set_swift_mount_check(data_servers):
 
 
 def _set_iptables(manager):
-    """Allow all incoming traffic to the OpenStack nodes from local IP"""
+    """Allow all incoming traffic to the OpenStack nodes from local IP."""
     ip = _get_localhost_ip()
     if not ip:
         # since this functionality might not be necessary, just give up

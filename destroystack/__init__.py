@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2013 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from destroystack.tools.server_manager import ServerManager
+import destroystack.tools.server_manager as server_manager
 
 
 def teardown_package():
-    """Disconnect SSH to all servers"""
-    if ServerManager._instance:
-        manager = ServerManager()
+    """Disconnect SSH to all servers."""
+    if server_manager.ServerManager._instance:
+        manager = server_manager.ServerManager()
         manager.disconnect()

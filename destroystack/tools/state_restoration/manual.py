@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2013 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -112,7 +109,7 @@ def restore_backup(server_manager):
 
 
 def _restore_backup_files(server_manager):
-    """ Restore backups of Swift made by '_backup()'.
+    """Restore backups of Swift made by '_backup()'.
 
     Symmetric method to '_backup'. Brings Swift back to the state where it
     was when making the backup. While doing this, Swift services are

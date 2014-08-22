@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2013 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +15,7 @@
 import swiftclient
 import logging
 import requests
-from time import sleep
+import time
 import destroystack.tools.common as common
 from destroystack.tools.timeout import timeout
 
@@ -86,7 +83,7 @@ class Swift(swiftclient.client.Connection):
     @timeout(TIMEOUT, "The replicas were not consistent within timeout.")
     def wait_for_replica_regeneration(self, count=3, check_nodes=None,
                                       exact=False):
-        """ Wait until there are 'count' replicas of everything.
+        """Wait until there are 'count' replicas of everything.
 
         :param check_nodes: Look only at first x number of nodes. Since usually
             the first 'count' nodes are primary nodes, if you set
@@ -97,10 +94,10 @@ class Swift(swiftclient.client.Connection):
         """
         LOG.info("Waiting until there is the right number of replicas")
         while not self.replicas_are_ok(count, check_nodes, exact):
-            sleep(5)
+            time.sleep(5)
 
     def _get_account_hash(self):
-        """ Gets the Swift account hash of the currently connected user.
+        """Gets the Swift account hash of the currently connected user.
 
         Note: shouldn't there be a nicer way to do this in swiftclient?
         """
@@ -140,7 +137,7 @@ class Swift(swiftclient.client.Connection):
 
 
 def file_urls_ok(urls, name, count=3, check_url_count=None, exact=False):
-    """ Go trough URLs of the file and check if at least 'count' responded.
+    """Go trough URLs of the file and check if at least 'count' responded.
 
     :param name: for logging output, should be something like "object file123"
     :param count: how many URLs need to be valid

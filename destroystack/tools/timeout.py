@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2013 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" Timeout decorator.
+"""Timeout decorator.
 
 Source: http://stackoverflow.com/q/56011
 The nose.tools.timed decorator is not good for our purposes because it only
@@ -23,23 +20,25 @@ checks if the time was exceeded after the function finishes, it doesn't
 interrupt it.
 """
 
-from functools import wraps
+import functools
 import errno
 import os
 import signal
 import logging
 import time
 import datetime
-from nose.tools import TimeExpired
+import nose.tools
 
 LOG = logging.getLogger(__name__)
+
+# workaround: get rid of unnecessary log messages
 logging.getLogger("iso8601").setLevel(logging.WARNING)
 
 
 def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
     def decorator(func):
         def _handle_timeout(signum, frame):
-            raise TimeExpired(error_message)
+            raise nose.tools.TimeExpired(error_message)
 
         def wrapper(*args, **kwargs):
             signal.signal(signal.SIGALRM, _handle_timeout)
@@ -50,7 +49,7 @@ def timeout(seconds=10, error_message=os.strerror(errno.ETIME)):
                 signal.alarm(0)
             return result
 
-        return wraps(func)(wrapper)
+        return functools.wraps(func)(wrapper)
 
     return decorator
 
@@ -74,8 +73,9 @@ def wait_for(label, condition, obj_getter, timeout_sec=120, period=1):
     LOG.info('%s - START' % label)
     while not condition(obj):
         if (datetime.datetime.now() - start) > timeout_:
-            raise TimeExpired("waiting for '%s' expired after %d seconds"
-                              % (label, timeout_sec))
+            raise nose.tools.TimeExpired("waiting for '%s' expired after"
+                                         " %d seconds"
+                                         % (label, timeout_sec))
         time.sleep(period)
         obj = obj_getter()
     LOG.info('%s - DONE' % label)

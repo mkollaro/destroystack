@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2013 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from itertools import chain
-from nose import SkipTest
+import itertools
+import nose
 
 from destroystack.tools.server_manager import ServerManager
 from destroystack.tools.swift import Swift
@@ -32,7 +29,7 @@ def requirements(manager):
     disks in total.
     """
     swift_data = manager.get_all(role='swift_data')
-    all_disks = list(chain.from_iterable(
+    all_disks = list(itertools.chain.from_iterable(
                      [server.disks for server in swift_data]))
     return (len(swift_data) >= 2 and len(all_disks) >= 6)
 
@@ -45,7 +42,7 @@ class TestSwiftSmallSetup():
     def setupClass(cls):
         cls.manager = ServerManager()
         if not requirements(cls.manager):
-            raise SkipTest
+            raise nose.SkipTest
         cls.manager.save_state()
         cls.swift = Swift(cls.manager)
 

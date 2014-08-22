@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2013 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,10 +41,6 @@ class Singleton(object):
 class ServerManager(Singleton):
 
     def __init__(self):
-        """
-        :param config: path to configuration file, should be the one which was
-            generated from the main one and contains roles for each server
-        """
         self._servers = server_tools.create_servers(common.CONFIG['servers'])
         self._workaround_single_swift_disk()
 
@@ -87,7 +80,7 @@ class ServerManager(Singleton):
             return None
 
     def get_all(self, role=None, roles=None):
-        """Same as `get`, but returns a list of all the matching servers"""
+        """Same as `get`, but returns a list of all the matching servers."""
         return list(self.servers(role, roles))
 
     def save_state(self, tag=''):

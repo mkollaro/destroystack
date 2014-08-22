@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
 # Copyright (c) 2013 Red Hat, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from nose import SkipTest
-from destroystack.tools.server_manager import ServerManager
+import nose
+import destroystack.tools.server_manager as server_manager
 import destroystack.tools.common as common
 import destroystack.tools.tempest as tempest
 
@@ -26,45 +23,45 @@ class TestRestarts():
 
     @classmethod
     def setupClass(cls):
-        cls.manager = ServerManager()
+        cls.manager = server_manager.ServerManager()
         if "tempest" not in common.CONFIG:
-            raise SkipTest("Tempest required to verify service restarts")
+            raise nose.SkipTest("Tempest required to verify service restarts")
         cls.manager.save_state()
 
     @classmethod
     def teardownClass(cls):
         # do the state restoration only once per this group, since they are not
         # particularly damaging to the system
-        # TODO: also run it when a test fails
+        # TODO(mkollaro) also run it when a test fails
         cls.manager.load_state()
 
     def test_nova_compute_restart(self):
         server = self.manager.get(role='compute')
         if not server:
-            raise SkipTest("Compute role needed for compute service test")
+            raise nose.SkipTest("Compute role needed for compute service test")
         server.cmd("service openstack-nova-compute restart")
         tempest.run(test_type="smoke", include="compute.servers")
 
     def test_nova_network_restart(self):
         server = self.manager.get(role='controller')
         if not server:
-            raise SkipTest("Compute role needed for compute service test")
+            raise nose.SkipTest("Compute role needed for compute service test")
         res = server.cmd("service openstack-nova-network status",
                          ignore_failures=True)
         if res.exit_code == 1:  # maybe neutron is being used
-            raise SkipTest("Service nova-network doesn't seem to exist")
+            raise nose.SkipTest("Service nova-network doesn't seem to exist")
         tempest.run(test_type="smoke", include="network")
 
     def test_keystone_restart(self):
         server = self.manager.get(role='keystone')
         if not server:
-            raise SkipTest("Keystone role needed for keystone service test")
+            raise nose.SkipTest("Keystone role needed for eystone test")
         server.cmd("service openstack-keystone restart")
         tempest.run(test_type="smoke", include="identity")
 
     def test_swift_proxy_restart(self):
         server = self.manager.get(role='swift_proxy')
         if not server:
-            raise SkipTest("Swift_proxy role needed for swift service test")
+            raise nose.SkipTest("Swift_proxy role needed for swift test")
         server.cmd("service openstack-swift-proxy restart")
         tempest.run(test_type="smoke", include="object_storage")
